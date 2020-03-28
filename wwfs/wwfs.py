@@ -1,43 +1,49 @@
-"""wwfs main routine.
-
-"""
+"""wwfs main routine."""
 import wwfs.utils as utils
 from wwfs.board import Board
 from wwfs.words import Rack
 from wwfs.tiles import TileBag
-
-
-def opponent_turn(rack, grid, tilebag):
-    """Play the opponents turn, update the grid and tilebag."""
-    pass
-
-
-def player_turn(rack, grid, tilebag):
-    """Compute best hand to play from my rack, update grid and tilebag."""
-    pass
+from wwfs.turn import Game
 
 
 def main(args):
     """Execute wwfs."""
     # Build the playing board for a new game
-    if args.new:
-        grid = Board(args.board)
+    # (assume new if no supplied load filename)
+    if not args.load:
+        board = Board(args.board)
         tilebag = TileBag(args.tilebag)
-    else:
-        # restore an active game
-        grid, tilebag = utils.restore(args.load)
+        status = None
+        mode = "new"
 
-    # Build the rack
-    rack = Rack(args.rack)
+    if args.player1:
+        rack = Rack(args.rack)
+        coord = None
+        direction = None
 
-    # Opponent plays
-    if args.opponent:
-        turn = opponent_turn(rack, grid, tilebag)
-    else:
-        turn = player_turn(rack, grid, tilebag)
+    if args.player2:
+        rack = args.rack
+        coord = args.coord
+        direction = args.direction
+
+    if args.load:
+        last_turn = utils.restore(args.load)
+        board = last_turn['board']
+        tilebag = last_turn['tilebag']
+        status = last_turn['status']
+        mode = "continue"
+
+    game_data = dict(zip(['board', 'tilebag', 'status', 'rack', 'coord',
+                          'direction', 'mode'],
+                         [board, tilebag, status, rack, coord,
+                         direction, mode]))
+    game = Game(game_data)
+
+    game.take_turn()
+    game.record_turn()
 
     # Output results
-    utils.print_board(turn)
-    utils.print_best_word(turn)
+    utils.print_board(game.turn)
+    utils.print_best_word(game.best_word)
 
-    utils.save(args.save, turn)
+    utils.save(args.save, game)

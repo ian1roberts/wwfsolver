@@ -8,7 +8,9 @@ key = {"sl": "single letter", "dl": "double letter", "tl": "triple letter",
 
 class Square(object):
     """Represents an individual square on the word board.
-       Squares hold letter tiles."""
+
+       Squares hold letter tiles.
+    """
 
     def __init__(self, x, y, tilemultiplier):
         """Represent a Square on the board, given a tile code multiplier."""
@@ -24,7 +26,8 @@ class Square(object):
     def __str__(self):
         """x:0    y:0 v:single letter letter."""
         return "x:{}\ty:{}\tv:{}\t{}".format(self.x, self.y,
-                                             self.tile, self.letter)
+                                             self.tile_multiplier_name,
+                                             self.tile_letter)
 
 
 class Board(object):
@@ -35,8 +38,6 @@ class Board(object):
         self._index = {}
         self.grid = None
         self.tile_grid = None
-        self.width = len(self.grid.columns) if self.grid else None
-        self.height = len(self.grid.index) if self.grid else None
         if layout:
             self.load_board(layout)
             self.create_board()
@@ -79,3 +80,23 @@ class Board(object):
                 self._index[counter] = tile
                 self.tile_grid[x][y] = tile
                 counter += 1
+
+    def get_square_xy(self, x, y, wlen, d):
+        """Return a set of squares if include wlen and direction."""
+        if d == 0:
+            if self.width >= (y + wlen):
+                return [self.tile_grid[x][i] for i in range(y, y + wlen)]
+            return False
+        if self.height >= (x + wlen):
+            return [self.tile_grid[i][y] for i in range(x, x + wlen)]
+        return False
+
+    @property
+    def width(self):
+        """Return number of columns on board."""
+        return len(self.tile_grid.columns)
+
+    @property
+    def height(self):
+        """Return the number of rows on the board."""
+        return len(self.tile_grid.index)

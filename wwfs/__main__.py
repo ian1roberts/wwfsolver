@@ -11,6 +11,11 @@ group.add_argument('-p', '--player1',
 group.add_argument('-o', '--player2',
                    help="Player 2 turn",
                    action="store_true")
+group.add_argument('-c', '--coord',
+                   help="XY coordinate of first tile_letter",
+                   action="store_true")
+group.add_argument('-d', '--direction',
+                   help="Direction of word", type=str)
 
 parser.add_argument('-s', '--save',
                     help='Save the active board.',
