@@ -59,9 +59,11 @@ class Rack(object):
         for lv, m in pair:
             if m.tile_multiplier_name == 'triple word':
                 wms.append(3)
+                ls.append(lv)
             elif (m.tile_multiplier_name == 'double word' or
                   m.tile_multiplier_name == 'center'):
                 wms.append(2)
+                ls.append(lv)
             elif m.tile_multiplier_name == 'single letter':
                 ls.append(lv)
             elif m.tile_multiplier_name == 'double letter':
@@ -99,5 +101,5 @@ class Rack(object):
 
     @property
     def opponent_word(self):
-        """Wrapper to player2 formatted word."""
+        """Return player2's rack as a formatted word."""
         return "".join(self.letters_no_blanks)

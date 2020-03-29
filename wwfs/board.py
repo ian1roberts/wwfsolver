@@ -20,7 +20,7 @@ class Square(object):
         self.tile_multiplier_name = key[tilemultiplier]
         self.tile_letter = ""
         self.player = -1
-        self.parent_word = ""
+        self.parent_word = []
         self.free = True
 
     def __str__(self):
@@ -102,9 +102,16 @@ class Board(object):
         squares = self.get_square_xy(x, y, wlen, d)
         for letter, square in zip(word, squares):
             square.tile_letter = letter
-        square.parent_word = word
-        square.free = False
-        square.player = player
+            square.parent_word.append(word)
+            if square.free:
+                square.free = False
+                square.tile_used = True
+            else:
+                square.reused = True
+                square.tile_used = False
+            square.player = player
+
+        return squares
 
     @property
     def width(self):

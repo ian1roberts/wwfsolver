@@ -64,13 +64,14 @@ class TileBag(object):
         return [self[x] for x in word]
 
     def update(self, tiles):
-        """Remove played tiles from bag."""
+        """Remove played letter tiles from bag."""
         used = self.tiles_in_word(tiles['word'])
-        self.played.append(used)
+        squares = tiles['squares']
 
-        for tile in used:
-            tile.total -= 1
-            tile.played += 1
+        for tile, square in zip(used, squares):
+            if square.tile_used:
+                self.played.append(tile.letter)
+                tile.played += 1
 
     @property
     def remaining(self):

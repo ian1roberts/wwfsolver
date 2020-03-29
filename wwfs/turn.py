@@ -92,11 +92,11 @@ class Game(object):
             w, wl, score, x, y, d = word
 
             # Play the word
-            self.board.play_word(w, wl, x, y, d, 1)
+            squares = self.board.play_word(w, wl, x, y, d, 1)
 
             # Update status logs
             turn_data = {'word': w, 'score': score, 'xy': (x, y),
-                         'direction': d}
+                         'direction': d, 'squares': squares}
             self.status.update(turn_data, player=1)
             self.tilebag.update(turn_data)
 
@@ -111,7 +111,7 @@ class Game(object):
         self.board.play_word(w, wl, x, y, d, 2)
         # Update status logs
         turn_data = {'word': w, 'score': score, 'xy': (x, y),
-                     'direction': d}
+                     'direction': d, 'squares': squares}
         self.status.update(turn_data, player=2)
         self.tilebag.update(turn_data)
 
