@@ -38,3 +38,20 @@ def load(fname):
     with open(fname, 'rb') as f:
         game_data = pickle.load(f)
         return game_data
+
+
+def dump_output(game, next_play):
+    """Wrap up turn by displaying status to screen."""
+    print("Tiles remaining: {}\nNext play: {}.\n".format(
+                                                    game.tilebag.remaining,
+                                                    next_play))
+    p1, p2 = game.status.player1total, game.status.player2total
+    nturns = game.status.turn_count
+
+    if game.tilebag.remaining < 1:
+        outcome = game.status.report_winner()
+        print("Game over. Player1: {}, Opponent: {}. Outcome: {}".format(
+                                                            p1, p2, outcome))
+    else:
+        print("Player1: {}, Opponent: {}, Turns: {}".format(
+                                                            p1, p2, nturns))

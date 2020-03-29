@@ -10,13 +10,14 @@ DICT = load_dictionary()
 class Rack(object):
     """Represents my rack of game letters."""
 
-    def __init__(self, letters):
+    def __init__(self, letters, player=1):
         """Represent an active rack of tiles."""
         self.letters = list(letters.strip().upper())
         self.letters_no_blanks = [x for x in self.letters if x != '0']
-        self.racks = self.make_racks()
-        self.words = set()
-        self.compute_rack_words()
+        if player == 1:
+            self.racks = self.make_racks()
+            self.words = set()
+            self.compute_rack_words()
         self._dict = DICT
 
     def make_racks(self):
@@ -95,3 +96,8 @@ class Rack(object):
             if (ws[3], ws[4]) == center:
                 break
         self.best_first_word = ws
+
+    @property
+    def opponent_word(self):
+        """Wrapper to player2 formatted word."""
+        return "".join(self.letters_no_blanks)

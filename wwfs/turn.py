@@ -100,9 +100,20 @@ class Game(object):
             self.status.update(turn_data, player=1)
             self.tilebag.update(turn_data)
 
-
     def player2_turn(self):
         """Player 2 takes a turn."""
+        w = self.game_data['rack'].opponent_word
+        wl = len(w)
+        x, y = self.game_data['coord']
+        d = self.game_data['direction']
+        squares = self.board.get_square_xy(x, y, wl, d)
+        score = self.rack.compute_word_score(w, squares, self.tilebag)
+        self.board.play_word(w, wl, x, y, d, 2)
+        # Update status logs
+        turn_data = {'word': w, 'score': score, 'xy': (x, y),
+                     'direction': d}
+        self.status.update(turn_data, player=2)
+        self.tilebag.update(turn_data)
 
     def print_board(self):
         """Quick dump of game board. Needs prettifying."""
