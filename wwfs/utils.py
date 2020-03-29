@@ -1,5 +1,6 @@
 """A collection of useful Utility functions."""
 import itertools
+import pickle
 
 WORDLIST = "/usr/share/dict/words"
 
@@ -24,3 +25,16 @@ def permute_rack(rack):
 def is_valid_word(word, wordlist):
     """Check word is valid in the dictionary."""
     return True if word in wordlist else False
+
+
+def save(fname, game_data):
+    """Save game data at end of turn."""
+    with open(fname, 'wb') as f:
+        pickle.dump(game_data, f)
+
+
+def load(fname):
+    """Load game data at start of turn."""
+    with open(fname, 'rb') as f:
+        game_data = pickle.load(f)
+        return game_data

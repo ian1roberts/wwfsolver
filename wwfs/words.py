@@ -72,9 +72,9 @@ class Rack(object):
             wm = reduce((lambda x, y: x * y), wms)
         return (ls * wm)
 
-    def compute_best_word(self, board, tilebag, best=False):
+    def compute_word_scores(self, board, tilebag, best=False):
         """Return the highest scoring word play for all rack words."""
-        scores = {}
+        scores = []
         for word in self.words:
             wlen = len(word)
             for i, square in enumerate(board):
@@ -82,6 +82,16 @@ class Rack(object):
                     squares = board.get_square_xy(square.x, square.y, wlen, d)
                     if squares:
                         score = self.compute_word_score(word, squares, tilebag)
-                        scores[(word, (square.x, square.y, d))] = score
+                        scores.append((word, wlen, score,
+                                       square.x, square.y, d))
 
-        return scores
+        self.word_scores = sorted(scores, key=lambda x: (-x[2], x[1], x[3],
+                                                         x[4], x[5]))
+
+    def first_word(self, board):
+        """Return best word that passes through center square."""
+        center = [(i.x, i.y) for i in board if i.is_center_square][0]
+        for ws in self.word_scores:
+            if (ws[3], ws[4]) == center:
+                break
+        self.best_first_word = ws

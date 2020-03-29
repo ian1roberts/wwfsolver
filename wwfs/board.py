@@ -18,9 +18,9 @@ class Square(object):
         self.y = y
         self.tile_multiplier = tilemultiplier
         self.tile_multiplier_name = key[tilemultiplier]
-        self.tile_letter = None
-        self.player = None
-        self.parent_word = None
+        self.tile_letter = ""
+        self.player = -1
+        self.parent_word = ""
         self.free = True
 
     def __str__(self):
@@ -28,6 +28,11 @@ class Square(object):
         return "x:{}\ty:{}\tv:{}\t{}".format(self.x, self.y,
                                              self.tile_multiplier_name,
                                              self.tile_letter)
+
+    @property
+    def is_center_square(self):
+        """Return True if square is the center square."""
+        return True if self.tile_multiplier_name == "center" else False
 
 
 class Board(object):
@@ -54,7 +59,8 @@ class Board(object):
             if i.x > x:
                 msg += '\n'
                 x = i.x
-            msg += ' {:^2}({:>2}, {:>2})'.format(i.tile_multiplier, i.x, i.y)
+            msg += ' {:^2}({:>2},{:>2}){:^1}'.format(
+                            i.tile_multiplier, i.x, i.y, i.tile_letter)
         return msg
 
     def __iter__(self):
@@ -90,6 +96,15 @@ class Board(object):
         if self.height >= (x + wlen):
             return [self.tile_grid[i][y] for i in range(x, x + wlen)]
         return False
+
+    def play_word(self, word, wlen, x, y, d, player):
+        """Given a word and coordinates, position word on board."""
+        squares = self.get_square_xy(x, y, wlen, d)
+        for letter, square in zip(word, squares):
+            square.tile_letter = letter
+        square.parent_word = word
+        square.free = False
+        square.player = player
 
     @property
     def width(self):
