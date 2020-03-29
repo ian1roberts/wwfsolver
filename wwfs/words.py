@@ -1,6 +1,7 @@
 """Compute best scoring words."""
 import itertools
 from functools import reduce
+from collections import Counter
 from wwfs.utils import permute_rack, load_dictionary, is_valid_word
 
 ALPHA = list("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
@@ -22,21 +23,31 @@ class Rack(object):
 
     def make_racks(self):
         """Return all playable racks by solving blanks."""
-        # TODO: can use to add in played board letters
         racks = []
+        self.counter_racks = []
 
         # Handle blanks
         n_blanks = sum([1 for x in self.letters if x == '0'])
 
-        if n_blanks == 1:
-            for a in ALPHA:
-                racks.append([a, ] + self.letters_no_blanks)
-        elif n_blanks == 2:
-            x = itertools.permutations(ALPHA, r=2)
+        if n_blanks == 2:
+            x = itertools.product(ALPHA, repeat=2)
+            d = set()
             for i in x:
-                racks.append(list(i) + self.letters_no_blanks)
+                d.add("".join(sorted(list(i))))
+                dd = list(d)
+                dd.sort()
+            for d in dd:
+                racks.append(list(d) + self.letters_no_blanks)
+                rc = Counter(list(d) + self.letters_no_blanks)
+                self.counter_racks.append(rc)
+        elif n_blanks == 1:
+            for A in ALPHA:
+                racks.append([A, ] + self.letters_no_blanks)
+                rc = Counter([A, ] + self.letters_no_blanks)
+                self.counter_racks.append(rc)
         else:
             racks.append(self.letters_no_blanks)
+            self.counter_racks.append(Counter(self.letters_no_blanks))
 
         return racks
 
@@ -98,6 +109,19 @@ class Rack(object):
             if (ws[3], ws[4]) == center:
                 break
         self.best_first_word = ws
+
+    def has_enough_letters(self, ldiff, word):
+        """Return True if a rack has enough letters to play word."""
+        for rack in self.counter_racks:
+            totdiff = sum(ldiff.values())
+            for l, c in ldiff.items():
+                if l in rack:
+                    count = rack[l]
+                    if count >= c:
+                        totdiff -= 1
+            if totdiff < 1:
+                return True
+        return False
 
     @property
     def opponent_word(self):

@@ -1,6 +1,7 @@
 """Track the game play turn by turn."""
 
 import itertools
+from wwfs import next as nm
 
 
 class Status(object):
@@ -55,12 +56,14 @@ class Status(object):
         """Compute running total score for Opponent."""
         return sum([x['Score'] for x in self.player2_history])
 
-# class Turn(object):
-#     """Represent a player's turn. Compute state change of board."""
-#
-#     def __init__(self):
-#         """Construct the turn order of events.Compute the post turn outcome."""
-#         pass
+    @property
+    def all_played_words(self):
+        """Return a simple list of all played words."""
+        p1 = [(x['Word'], x['Coord'], x['Direction'])
+              for x in self.player1_history if x['Word']]
+        p2 = [(x['Word'], x['Coord'], x['Direction'])
+              for x in self.player2_history if x['Word']]
+        return p1 + p2
 
 
 class Game(object):
@@ -99,6 +102,16 @@ class Game(object):
                          'direction': d, 'squares': squares}
             self.status.update(turn_data, player=1)
             self.tilebag.update(turn_data)
+            return
+        # TODO: Player 1 continues game. Places best word on current board.
+        # Computes highest scoring move across all exisitng viable moves.
+        next_move = nm.NextMove(self.game_data, self.status.all_played_words)
+        # Extend existing word
+        word_extensions = next_move.get_valid_word_extensions()
+
+        # Cross existing word
+        # Play along side existing words
+
 
     def player2_turn(self):
         """Player 2 takes a turn."""
