@@ -21,18 +21,20 @@ def main(args):
         coord = None
         direction = None
         player = 1
+        next_play = "Opponent."
 
     if args.player2:
         rack = args.rack
         coord = args.coord
         direction = args.direction
         player = 2
+        next_play = "Player1."
 
     if args.load:
         last_turn = utils.load(args.load)
-        board = last_turn['board']
-        tilebag = last_turn['tilebag']
-        status = last_turn['status']
+        board = last_turn.board
+        tilebag = last_turn.tilebag
+        status = last_turn.status
         mode = "continue"
 
     game_data = dict(zip(['board', 'tilebag', 'status', 'rack', 'coord',
@@ -46,3 +48,18 @@ def main(args):
     print(game.print_board())
     print(game.print_status())
     utils.save(args.save, game)
+
+    # Check game over?
+    print("Tiles remaining: {}\nNext play: {}.\n".format(
+                                                    game.tilebag.remaining,
+                                                    next_play))
+    p1, p2 = game.status.player1total, game.status.player2total
+    nturns = game.status.turn_count
+
+    if game.tilebag.remaining < 1:
+        outcome = game.status.report_winner()
+        print("Game over. Player1: {}, Opponent: {}. Outcome: {}".format(
+                                                            p1, p2, outcome))
+    else:
+        print("Player1: {}, Opponent: {}, Turns: {}".format(
+                                                            p1, p2, nturns))

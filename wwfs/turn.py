@@ -55,13 +55,12 @@ class Status(object):
         """Compute running total score for Opponent."""
         return sum([x['Score'] for x in self.player2_history])
 
-
-class Turn(object):
-    """Represent a player's turn. Compute state change of board."""
-
-    def __init__(self):
-        """Construct the turn order of events.Compute the post turn outcome."""
-        pass
+# class Turn(object):
+#     """Represent a player's turn. Compute state change of board."""
+#
+#     def __init__(self):
+#         """Construct the turn order of events.Compute the post turn outcome."""
+#         pass
 
 
 class Game(object):
@@ -99,6 +98,8 @@ class Game(object):
             turn_data = {'word': w, 'score': score, 'xy': (x, y),
                          'direction': d}
             self.status.update(turn_data, player=1)
+            self.tilebag.update(turn_data)
+
 
     def player2_turn(self):
         """Player 2 takes a turn."""
@@ -125,6 +126,19 @@ class Game(object):
                                     *[str(x2[x]) for x in self.status.HEADER])
         msg += "{}\n{}\n".format(m1, m2)
         return msg
+
+    def report_winner(self):
+        """Report current outcome."""
+        p1 = self.status.player1total
+        p2 = self.status.player2total
+
+        if p1 == p2:
+            outcome = 'Tie.'
+        elif p1 > p2:
+            outcome = "Player1."
+        else:
+            outcome = "Opponent."
+        return outcome
 
     @property
     def rack(self):

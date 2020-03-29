@@ -32,6 +32,7 @@ class TileBag(object):
     def __init__(self, fname):
         """Load the Tile Bag of letters at the start of a game."""
         self.tile_bag = self.initialise_bag(fname)
+        self.played = []
 
     def __str__(self):
         """Print representation of a TileBag."""
@@ -57,6 +58,19 @@ class TileBag(object):
             bag[letter] = Tile(letter, int(total), int(value))
 
         self.bag = bag
+
+    def tiles_in_word(self, word):
+        """Return tiles that make up word."""
+        return [self[x] for x in word]
+
+    def update(self, tiles):
+        """Remove played tiles from bag."""
+        used = self.tiles_in_word(tiles['word'])
+        self.played.append(used)
+
+        for tile in used:
+            tile.total -= 1
+            tile.played += 1
 
     @property
     def remaining(self):

@@ -19,10 +19,10 @@ group.add_argument('-d', '--direction',
 
 parser.add_argument('-s', '--save',
                     help='Save the active board.',
-                    default='wwfs.tsv', type=str)
+                    default='wwfs_game_data.pkl', type=str)
 parser.add_argument('-l', '--load',
                     help='Load in game board.',
-                    default='wwfs.tsv', type=str)
+                    default='', type=str)
 
 # main positional argument is the filename of a template board
 parser.add_argument('board', help='filename of board')
