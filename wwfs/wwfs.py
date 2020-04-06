@@ -35,15 +35,16 @@ def main(args):
         direction = args.direction
         player = 2
         next_play = "Player1."
-
+    # Compile all essential information required to play the game.
     game_data = dict(zip(['board', 'tilebag', 'status', 'rack', 'coord',
                           'direction', 'mode', 'player'],
                          [board, tilebag, status, rack, coord,
                          direction, mode, player]))
+    # Game is the main hub object, invokes take_turn the main method call.
     game = Game(game_data)
     game.take_turn()
 
-    # Output results
+    # Output results, and exit saving game state.
     print(game.print_board())
     print(game.print_status())
     utils.save(args.save, game)
