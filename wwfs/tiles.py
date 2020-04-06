@@ -63,10 +63,10 @@ class TileBag(object):
         """Return tiles that make up word."""
         return [self[x] for x in word]
 
-    def update(self, tiles):
+    def update(self, word):
         """Remove played letter tiles from bag."""
-        used = self.tiles_in_word(tiles['word'])
-        squares = tiles['squares']
+        used = self.tiles_in_word(word.word)
+        squares = word.squares
 
         for tile, square in zip(used, squares):
             if square.tile_used:

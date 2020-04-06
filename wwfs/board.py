@@ -16,6 +16,7 @@ class Square(object):
         """Represent a Square on the board, given a tile code multiplier."""
         self.x = x
         self.y = y
+        self.coord = (x, y)
         self.tile_multiplier = tilemultiplier
         self.tile_multiplier_name = key[tilemultiplier]
         self.tile_letter = ""
@@ -87,20 +88,22 @@ class Board(object):
                 self.tile_grid[x][y] = tile
                 counter += 1
 
-    def get_square_xy(self, x, y, wlen, d):
+    def get_square_xy(self, word, x, y, d):
         """Return a set of squares if include wlen and direction."""
+        ylim = y + len(word)
+        xlim = x + len(word)
         if d == 0:
-            if self.width >= (y + wlen):
-                return [self.tile_grid[x][i] for i in range(y, y + wlen)]
+            if self.width >= ylim:
+                return [self.tile_grid[x][i] for i in range(y, ylim)]
             return False
-        if self.height >= (x + wlen):
-            return [self.tile_grid[i][y] for i in range(x, x + wlen)]
+        if self.height >= xlim:
+            return [self.tile_grid[i][y] for i in range(x, xlim)]
         return False
 
-    def play_word(self, word, wlen, x, y, d, player):
+    def play_word(self, word, player):
         """Given a word and coordinates, position word on board."""
-        squares = self.get_square_xy(x, y, wlen, d)
-        for letter, square in zip(word, squares):
+        squares = self.get_square_xy(word, word.x, word.y, word.direction)
+        for letter, square in zip(word.word, squares):
             square.tile_letter = letter
             square.parent_word.append(word)
             if square.free:
@@ -110,7 +113,6 @@ class Board(object):
                 square.reused = True
                 square.tile_used = False
             square.player = player
-
         return squares
 
     @property

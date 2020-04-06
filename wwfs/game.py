@@ -1,7 +1,8 @@
 """Track the game play turn by turn."""
 
 import itertools
-from wwfs import next as nm
+from wwfs.turn import Turn
+from wwfs.word import Word, PlayedWords
 
 
 class Status(object):
@@ -9,7 +10,7 @@ class Status(object):
 
     HEADER = ["Turn", "Player", "Total", "Word", "Score", "Coord", "Direction"]
 
-    def __init__(self, gd):
+    def __init__(self):
         """Construct a new status object for a new game."""
         self.turn_count = 0
         self.player1_history = [dict(zip(
@@ -20,31 +21,32 @@ class Status(object):
                                          self.HEADER,
                                          [1000, False, False, False, 0, False,
                                           False]))]
+        self.all_played = PlayedWords()
 
     def __str__(self):
         """Log entry print out."""
         "Turn:{:>3}\t"
 
-    def log_entry(self, player, total, gd):
+    def log_entry(self, player, total, word):
         """Prepare log entry from game data."""
         d = {0: "Across", 1: "Down"}
         return dict(zip(self.HEADER,
-                        [self.turn_count, player, total + gd['score'],
-                         gd['word'], gd['score'], gd['xy'],
-                         d[gd['direction']]]))
+                        [self.turn_count, player, total + word.score,
+                         word.word, word.score, word.coord,
+                         d[word.direction]]))
 
-    def update(self, gd, player):
+    def update(self, word):
         """End of turn update logs."""
         self.turn_count += 1
 
-        if player == 1:
+        if word.player == 1:
             play = 'Player1'
             total = self.player1total
-            self.player1_history.append(self.log_entry(play, total, gd))
+            self.player1_history.append(self.log_entry(play, total, word))
         else:
             play = 'Opponent'
             total = self.player2total
-            self.player2_history.append(self.log_entry(play, total, gd))
+            self.player2_history.append(self.log_entry(play, total, word))
 
     @property
     def player1total(self):
@@ -56,15 +58,6 @@ class Status(object):
         """Compute running total score for Opponent."""
         return sum([x['Score'] for x in self.player2_history])
 
-    @property
-    def all_played_words(self):
-        """Return a simple list of all played words."""
-        p1 = [(x['Word'], x['Coord'], x['Direction'])
-              for x in self.player1_history if x['Word']]
-        p2 = [(x['Word'], x['Coord'], x['Direction'])
-              for x in self.player2_history if x['Word']]
-        return p1 + p2
-
 
 class Game(object):
     """Track turn by turn moves of the game. Provide current state of game."""
@@ -74,7 +67,7 @@ class Game(object):
         self.game_data = game_data
 
         if game_data['mode'] == 'new':
-            self.game_data['status'] = Status(game_data)
+            self.game_data['status'] = Status()
 
     def take_turn(self):
         """Make the turn. Compute best word and play it."""
@@ -92,20 +85,19 @@ class Game(object):
             self.rack.compute_word_scores(self.board, self.tilebag)
             self.rack.first_word(self.board)
             word = self.rack.best_first_word
-            w, wl, score, x, y, d = word
 
             # Play the word
-            squares = self.board.play_word(w, wl, x, y, d, 1)
+            word.squares = self.board.play_word(word, 1)
+            word.player = 1
+            word.played = True
 
             # Update status logs
-            turn_data = {'word': w, 'score': score, 'xy': (x, y),
-                         'direction': d, 'squares': squares}
-            self.status.update(turn_data, player=1)
-            self.tilebag.update(turn_data)
+            self.status.update(word)
+            self.tilebag.update(word)
             return
         # TODO: Player 1 continues game. Places best word on current board.
         # Computes highest scoring move across all exisitng viable moves.
-        next_move = nm.NextMove(self.game_data, self.status.all_played_words)
+        next_move = Turn(self.game_data, self.status.all_played_words)
         # Extend existing word
         word_extensions = next_move.get_valid_word_extensions()
 
@@ -115,18 +107,18 @@ class Game(object):
 
     def player2_turn(self):
         """Player 2 takes a turn."""
-        w = self.game_data['rack'].opponent_word
-        wl = len(w)
-        x, y = self.game_data['coord']
-        d = self.game_data['direction']
-        squares = self.board.get_square_xy(x, y, wl, d)
-        score = self.rack.compute_word_score(w, squares, self.tilebag)
-        self.board.play_word(w, wl, x, y, d, 2)
+        word = Word(self.game_data['rack'].opponent_word)
+        word.coord = self.game_data['coord']
+        word.direction = self.game_data['direction']
+        word.squares = self.board.get_square_xy(word, word.x, word.y,
+                                                word.direction)
+        word.compute_word_score(word.squares, self.tilebag)
+        word.player = 2
+        self.board.play_word(word, 2)
+        word.played = True
         # Update status logs
-        turn_data = {'word': w, 'score': score, 'xy': (x, y),
-                     'direction': d, 'squares': squares}
-        self.status.update(turn_data, player=2)
-        self.tilebag.update(turn_data)
+        self.status.update(word)
+        self.tilebag.update(word)
 
     def print_board(self):
         """Quick dump of game board. Needs prettifying."""
@@ -183,3 +175,8 @@ class Game(object):
     def status(self):
         """Accessor returns Status object."""
         return self.game_data['status']
+
+    @property
+    def all_played_words(self):
+        """Accessor returns PlayedWords object."""
+        return self.game_data['played']
