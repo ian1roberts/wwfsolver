@@ -120,7 +120,7 @@ class Game(object):
                                                 word.direction)
         word.compute_word_score(word.squares, self.tilebag)
         word.player = 2
-        self.board.play_word(word, 2)
+        self.board.play_word(word)
         word.played = True
         # Update status logs
         self.status.update(word)

@@ -121,10 +121,10 @@ class Word(object):
     def get_letter_overhangs(self, candidate):
         """Return the front / back letter overhangs of word in candidate."""
         index = candidate.find(self.word)
-        front_overhang = candidate[0:index]
-        if front_overhang == self.word:
-            front_overhang = False
-        back_overhang = candidate[index: len(candidate)]
+        front_overhang = False
+        if index > 0:
+            front_overhang = candidate[0:index]
+        back_overhang = candidate[index+len(self): len(candidate)]
         if back_overhang == self.word:
             back_overhang = False
 

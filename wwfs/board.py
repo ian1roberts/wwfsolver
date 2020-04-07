@@ -40,9 +40,10 @@ class Square(object):
         """Return True if square is the center square."""
         return True if self.tile_multiplier_name == "center" else False
 
-    def collision(self, ori, candidate, DICT, direction):
+    def collision(self, ori, candidate, direction, DICT=DICT):
         """Return word collision if valid, else False."""
         collision_words = set()
+        print("Ori:{} Cand:{} Direct:{}".format(ori, candidate, direction))
         if ori == 'left' and direction == 0:
             for pword in self.parent_word:
                 if pword.drection == 0:
@@ -71,6 +72,7 @@ class Square(object):
                     if cword not in DICT:
                         return False
                     collision_words.add(cword)
+        return collision_words
 
 
 class Board(object):
@@ -148,7 +150,7 @@ class Board(object):
             else:
                 square.reused = True
                 square.tile_used = False
-        square.parent_word.append(word)
+            square.parent_word.append(word)
 
     def is_valid_move_extends(self, word, candidate):
         """Candidate word can be legally played on top of word on board."""
@@ -158,19 +160,25 @@ class Board(object):
         bonus_words = []
         if need_front:
             if word.direction == 0:
-                x = word.x - len(need_front)
-                y = word.y
-            else:
                 x = word.x
                 y = word.y - len(need_front)
-            if (x < 0) or (y < 0):
-                return (False, [])
+                if x < 0:
+                    return (False, [])
+            else:
+                x = word.x - len(need_front)
+                y = word.y
+                if y < 0:
+                    return (False, [])
             tmp_word = Word(need_front, coord=(x, y), direction=word.direction)
             front_squares = self.get_square_xy(tmp_word, x, y, word.direction)
-
+            if front_squares is False:
+                return (False, [])
+            print(word)
+            print(candidate)
             for i, j in zip(need_front, front_squares):
                 if j.free:
                     # check neighbour Squares
+                    print('Check Collisions: {}\tj{}'.format(i, j))
                     collisions = self.check_collisions(j, word.direction,
                                                        'front')
                     if collisions:
@@ -184,23 +192,26 @@ class Board(object):
                                 for bword in collision_word:
                                     bonus_words.append(bword)
 
-                elif j.letter == i:
+                elif j.tile_letter == i:
                     continue
                 else:
                     return (False, [])
 
         if need_back:
             if word.direction == 0:
-                x = word.x + len(need_back)
-                y = word.y
-            else:
                 x = word.x
-                y = word.y + len(need_back)
-            if (x > self.width) or (y > self.height):
-                return (False, [])
+                y = word.y + len(word)
+                if x >= self.width:
+                    return (False, [])
+            else:
+                x = word.x + len(word)
+                y = word.y
+                if y >= self.height:
+                    return (False, [])
             tmp_word = Word(need_back, coord=(x, y), direction=word.direction)
             back_squares = self.get_square_xy(tmp_word, x, y, word.direction)
-
+            if back_squares is False:
+                return (False, [])
             for i, j in zip(need_back, back_squares):
                 if j.free:
                     # check neighbour Squares
@@ -216,7 +227,7 @@ class Board(object):
                             else:
                                 for bword in collision_word:
                                     bonus_words.append(bword)
-                elif j.letter == i:
+                elif j.tile_letter == i:
                     continue
                 else:
                     return (False, [])
@@ -228,26 +239,24 @@ class Board(object):
 
     def collides(self, square, ori):
         """Returns true if tested square collides with adjacent square ori."""
-        x, y = square.xy
+        x, y = square.coord
         if ori == 'up':
-            y -= 1
-            if y < 0:
-                return False
-        if ori == "down":
-            y += 1
-            if y > self.height:
-                return False
-        if ori == "left":
             x -= 1
-            if x < 0:
-                return False
-        if ori == "right":
+        if ori == "down":
             x += 1
-            if x > self.width:
-                return False
+        if ori == "left":
+            y -= 1
+        if ori == "right":
+            y += 1
+        if y >= self.width or y < 0:
+            return False
+        if x >= self.height or x < 0:
+            return False
 
-        adjacent = self[x][y]
-        return adjacent if not adjacent.free else False
+        adjacent = self.tile_grid[x][y]
+        if adjacent.free:
+            return False
+        return adjacent
 
     def check_collisions(self, square, direction, ending):
         """Check if playing a square would clash with a neighbour word."""
@@ -263,10 +272,7 @@ class Board(object):
             check_square = self.collides(square, ori)
             if check_square:
                 collisions.append((ori, check_square))
-
-
-
-
+        return collisions
 
     @property
     def width(self):

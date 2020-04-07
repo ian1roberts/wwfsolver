@@ -20,10 +20,12 @@ class Turn(object):
     def get_valid_word_extensions(self):
         """Compute all possible word extensions."""
         # get all extensions of played words
+        self._check = []
         playable = dict(zip([x for x in self.all_played],
                             [set() for _ in self.all_played]))
         for word in self.all_played:
             candidates = word.get_word_extensions(DICT, self.rack)
+            self._check.append(candidates)
             if candidates:
                 for candidate in candidates:
                     is_valid, bwords = self.board.is_valid_move_extends(
@@ -32,7 +34,6 @@ class Turn(object):
                         playable[word].add(candidate)
                     if len(bwords) > 0:
                         [playable[word].add(x) for x in bwords]
-
         return playable
 
     def get_valid_word_crosses(self):
