@@ -93,25 +93,23 @@ class Game(object):
             self.rack.compute_word_scores(self.board, self.tilebag)
             self.rack.first_word(self.board)
             word = self.rack.best_first_word
+        else:
+            # TODO: Player 1 continues game. Places best word on current board.
+            # Computes highest scoring move across all exisitng viable moves.
+            next_move = Turn(self.rack, self.status.all_played, self.board)
+            # Extend existing word
+            word = next_move.best_word()
 
-            # Play the word
-            word.squares = self.board.play_word(word, 1)
-            word.player = 1
-            word.played = True
+            # Cross existing word
+            # Play along side existing words
+        # Play the word
+        self.board.play_word(word)
+        word.player = 1
+        word.played = True
 
-            # Update status logs
-            self.status.update(word)
-            self.tilebag.update(word)
-            return
-        # TODO: Player 1 continues game. Places best word on current board.
-        # Computes highest scoring move across all exisitng viable moves.
-        next_move = Turn(self.game_data, self.status.all_played_words)
-        # Extend existing word
-        word_extensions = next_move.get_valid_word_extensions()
-
-        # Cross existing word
-        # Play along side existing words
-
+        # Update status logs
+        self.status.update(word)
+        self.tilebag.update(word)
 
     def player2_turn(self):
         """Player 2 takes a turn."""

@@ -1,5 +1,6 @@
 """Classes that define Words."""
 from functools import reduce, total_ordering
+from collections import Counter
 
 
 @total_ordering
@@ -98,6 +99,38 @@ class Word(object):
         newone.__dict__.update(self.__dict__)
         return newone
 
+    def get_word_extensions(self, dictionary, rack=None):
+        """Return all words longer than word containing word.
+        If given rack, subset for playable words (extra letters in rack).
+        """
+        playable = set()
+        key_letters = Counter([l for l in self.word])
+        matches = [s for s in dictionary
+                   if self.word in s and len(s) > len(self)]
+        # check that letter differences exist in rack
+        if rack:
+            for longerword in matches:
+                word_letters = Counter([l for l in longerword])
+                letter_diff = word_letters - key_letters
+                if rack.has_enough_letters(letter_diff, longerword):
+                    playable.add(longerword)
+        else:
+            playable.add([longerword for longerword in matches])
+        return playable
+
+    def get_letter_overhangs(self, candidate):
+        """Return the front / back letter overhangs of word in candidate."""
+        index = candidate.find(self.word)
+        front_overhang = candidate[0:index]
+        if front_overhang == self.word:
+            front_overhang = False
+        back_overhang = candidate[index: len(candidate)]
+        if back_overhang == self.word:
+            back_overhang = False
+
+        return (front_overhang, back_overhang)
+
+
 
 class PlayedWords(object):
     """Represent all played words."""
@@ -126,3 +159,8 @@ class PlayedWords(object):
     def add_word(self, word):
         """Given word coordinates and direction, add it to the played words."""
         self.words.append(word)
+
+    @property
+    def word_list(self):
+        """Return list of word strings"""
+        return [x.word for x in self]
