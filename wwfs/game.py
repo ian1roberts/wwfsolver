@@ -38,6 +38,7 @@ class Status(object):
     def update(self, word):
         """End of turn update logs."""
         self.turn_count += 1
+        self.all_played.add_word(word)
 
         if word.player == 1:
             play = 'Player1'
@@ -62,16 +63,23 @@ class Status(object):
 class Game(object):
     """Track turn by turn moves of the game. Provide current state of game."""
 
-    def __init__(self, game_data):
+    def __init__(self, **kwargs):
         """Set up a round of word play."""
-        self.game_data = game_data
+        self.board = kwargs.get('board', None)
+        self.tilebag = kwargs.get('tilebag', None)
+        self.status = kwargs.get('status', None)
+        self.rack = kwargs.get('rack', None)
+        self.coord = kwargs.get('coord', None)
+        self.direction = kwargs.get('direction', None)
+        self.player = kwargs.get('player', None)
+        self.mode = kwargs.get('mode', None)
 
-        if game_data['mode'] == 'new':
-            self.game_data['status'] = Status()
+        if self.mode == 'new':
+            self.status = Status()
 
     def take_turn(self):
         """Make the turn. Compute best word and play it."""
-        if self.game_data['player'] == 1:
+        if self.player == 1:
             self.player1_turn()
         else:
             self.player2_turn()
@@ -80,7 +88,7 @@ class Game(object):
         """Player 1 takes a turn."""
         # TODO: Player 1 new game; first turn. Places best rack word on board.
         # Selects highest scoring position.
-        if self.game_data['mode'] == 'new':
+        if self.mode == 'new':
             # Best first word
             self.rack.compute_word_scores(self.board, self.tilebag)
             self.rack.first_word(self.board)
@@ -107,9 +115,9 @@ class Game(object):
 
     def player2_turn(self):
         """Player 2 takes a turn."""
-        word = Word(self.game_data['rack'].opponent_word)
-        word.coord = self.game_data['coord']
-        word.direction = self.game_data['direction']
+        word = Word(self.rack.opponent_word)
+        word.coord = self.coord
+        word.direction = self.direction
         word.squares = self.board.get_square_xy(word, word.x, word.y,
                                                 word.direction)
         word.compute_word_score(word.squares, self.tilebag)
@@ -135,11 +143,13 @@ class Game(object):
         m1, m2 = "\nPlayer1 end of turns.", "\nOpponent end of turns."
         for x1, x2 in itertools.zip_longest(p1, p2):
             if x1 and x1['Player']:
-                m1 = "{:>3}\t {:<8}\t {:>4}\t {:<10}\t {:>4}\t {:^}\t {:^9}".format(
-                                    *[str(x1[x]) for x in self.status.HEADER])
+                m1 = ("{:>3}\t {:<8}\t {:>4}\t {:<10}\t {:>4}\t {:^}\t"
+                      "{:^9}").format(
+                      *[str(x1[x]) for x in self.status.HEADER])
             if x2 and x2['Player']:
-                m2 = "{:>3}\t {:<8}\t {:>4}\t {:<10}\t {:>4}\t {:^}\t {:^9}".format(
-                                    *[str(x2[x]) for x in self.status.HEADER])
+                m2 = ("{:>3}\t {:<8}\t {:>4}\t {:<10}\t {:>4}\t {:^}\t"
+                      "{:^9}").format(
+                      *[str(x2[x]) for x in self.status.HEADER])
         msg += "{}\n{}\n".format(m1, m2)
         return msg
 
@@ -155,28 +165,3 @@ class Game(object):
         else:
             outcome = "Opponent."
         return outcome
-
-    @property
-    def rack(self):
-        """Accessor returns rack object."""
-        return self.game_data['rack']
-
-    @property
-    def board(self):
-        """Accessor returns board object."""
-        return self.game_data['board']
-
-    @property
-    def tilebag(self):
-        """Accessor returns tilebag object."""
-        return self.game_data['tilebag']
-
-    @property
-    def status(self):
-        """Accessor returns Status object."""
-        return self.game_data['status']
-
-    @property
-    def all_played_words(self):
-        """Accessor returns PlayedWords object."""
-        return self.game_data['played']

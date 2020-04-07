@@ -116,7 +116,7 @@ class PlayedWords(object):
 
     def __str__(self):
         """Represent played words."""
-        return "{} words have been played.".format(len(self.all_played_words))
+        return "{} words have been played.".format(len(self.words))
 
     def __iter__(self):
         """Iterate over all played words."""
