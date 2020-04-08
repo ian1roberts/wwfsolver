@@ -1,6 +1,7 @@
 """Board builds a playing grid from input code."""
 
 import pandas as pd
+from functools import total_ordering
 from wwfs.word import Word
 from wwfs.utils import load_dictionary
 
@@ -11,6 +12,7 @@ key = {"sl": "single letter", "dl": "double letter", "tl": "triple letter",
        }
 
 
+@total_ordering
 class Square(object):
     """Represents an individual square on the word board.
 
@@ -29,6 +31,16 @@ class Square(object):
         self.parent_word = []
         self.free = True
 
+    def __hash__(self):
+        return hash((self.x, self.y, self.tile_multiplier_name))
+
+    def __eq__(self, other):
+        return (self.x, self.y, self.tile_multiplier_name) == (
+                                  other.x, other.y, other.tile_multiplier_name)
+
+    def __lt__(self, other):
+        return self.index < other.index
+
     def __str__(self):
         """x:0    y:0 v:single letter letter."""
         return "x:{}\ty:{}\tv:{}\t{}".format(self.x, self.y,
@@ -46,32 +58,33 @@ class Square(object):
         print("Ori:{} Cand:{} Direct:{}".format(ori, candidate, direction))
         if ori == 'left' and direction == 0:
             for pword in self.parent_word:
-                if pword.drection == 0:
+                if pword.direction == 0:
                     cword = pword.word + candidate
                     if cword not in DICT:
                         return False
                     collision_words.add(cword)
         if ori == 'right' and direction == 0:
             for pword in self.parent_word:
-                if pword.drection == 0:
+                if pword.direction == 0:
                     cword = candidate + pword.word
                     if cword not in DICT:
                         return False
                     collision_words.add(cword)
         if ori == 'up' and direction == 1:
             for pword in self.parent_word:
-                if pword.drection == 1:
+                if pword.direction == 1:
                     cword = pword.word + candidate
                     if cword not in DICT:
                         return False
                     collision_words.add(cword)
         if ori == 'down' and direction == 1:
             for pword in self.parent_word:
-                if pword.drection == 0:
+                if pword.direction == 1:
                     cword = candidate + pword.word
                     if cword not in DICT:
                         return False
                     collision_words.add(cword)
+        # TODO: Run alongs are not handled by this method.
         return collision_words
 
 
@@ -261,8 +274,8 @@ class Board(object):
     def check_collisions(self, square, direction, ending):
         """Check if playing a square would clash with a neighbour word."""
         collisions = []
-        front_hori = ['up', 'down', 'left']
-        back_hori = ['up', 'down', 'right']
+        front_hori = ['up', 'down', 'right']
+        back_hori = ['up', 'down', 'left']
         front_vert = ['up', 'left', 'right']
         back_vert = ['down', 'left', 'right']
         oris = {('front', 0): front_hori, ('back', 0): back_hori,

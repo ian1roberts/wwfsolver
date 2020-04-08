@@ -73,22 +73,11 @@ class Word(object):
 
     def __eq__(self, other):
         return (self.__baseeq__(other) and
-                (self.score, self.word, self.x, self.y, self.direction) ==
-                (other.score, other.word, self.x, self.y, self.direction))
+                (self.score, self.word) == (other.score, other.word))
 
     def __lt__(self, other):
         return (self.__baseeq__(other) and
-                (self.score, self.word, self.x, self.y, self.direction) <
-                (other.score, other.word, self.x, self.y, self.direction))
-
-    def __le__(self, other):
-        return (self.__baseeq__(other) and
-                (self.score, self.word, self.x, self.y, self.direction) <=
-                (other.score, self.word, self.x, self.y, self.direction))
-
-    def __ne__(self, other):
-        return (self.__baseeq__(other) and
-                not self.__eq__(other.word))
+                (self.word == other.word) and (self.word < other.word))
 
     def __len__(self):
         """Returns length of word."""
@@ -115,21 +104,23 @@ class Word(object):
                 if rack.has_enough_letters(letter_diff, longerword):
                     playable.add(longerword)
         else:
-            playable.add([longerword for longerword in matches])
+            playable = set(matches)
         return playable
 
     def get_letter_overhangs(self, candidate):
         """Return the front / back letter overhangs of word in candidate."""
         index = candidate.find(self.word)
-        front_overhang = False
-        if index > 0:
-            front_overhang = candidate[0:index]
-        back_overhang = candidate[index+len(self): len(candidate)]
-        if back_overhang == self.word:
+        if index < 0:
+            return (False, False)
+        front_overhang = candidate[0: index]
+        back_overhang = candidate[index + len(self): len(candidate)]
+        print(candidate, index)
+        if front_overhang == self.word or front_overhang == "":
+            front_overhang = False
+        if back_overhang == self.word or back_overhang == "":
             back_overhang = False
 
         return (front_overhang, back_overhang)
-
 
 
 class PlayedWords(object):

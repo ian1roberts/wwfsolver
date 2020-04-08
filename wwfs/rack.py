@@ -91,8 +91,9 @@ class Rack(object):
             for l, c in ldiff.items():
                 if l in rack:
                     count = rack[l]
-                    if count >= c:
-                        totdiff -= 1
+                    totdiff -= count
+                    if count - c < 0:  # not enough letters, short circuit
+                        break
             if totdiff < 1:
                 return True
         return False

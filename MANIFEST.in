@@ -1,2 +1,3 @@
 include wwwfs/data/board.csv
 include wwwfs/data/tiles.csv
+include tests/data

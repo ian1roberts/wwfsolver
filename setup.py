@@ -17,20 +17,20 @@ setup(
     version='%s' % __version__,
     author='Ian Roberts',
     author_email='ian.roberts@cantab.net',
-    packages=find_packages(exclude=['test*', 'docs']),
+    packages=find_packages(exclude=['tests', 'docs']),
     include_package_data=True,
     license='LICENSE.txt',
     description=long_description,
     classifiers=[
-        'Development Status :: 3- Alpha',
+        'Development Status :: 3-Alpha',
         'Intended Audience :: Developers',
         'Topic :: Word Games',
         'Programming Language :: Python :: 3',
     ],
-    install_requires=['networkx', 'nose'
+    install_requires=['sphinx', 'pytest'
                       ],
     entry_points={
         'console_scripts': ['wwfs=wwfs.__main__:run_wwfs'],
         },
-    test_suite='unittest'
+    test_suite='pytest'
 )
