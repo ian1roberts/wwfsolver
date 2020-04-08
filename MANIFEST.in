@@ -1,0 +1,2 @@
+include wwwfs/data/board.csv
+include wwwfs/data/tiles.csv
