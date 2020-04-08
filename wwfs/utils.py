@@ -10,6 +10,8 @@ def load_dictionary(wordlist=WORDLIST):
     words = set()
     with open(wordlist) as fhandle:
         for word in fhandle:
+            if "'" in word or len(word) < 2:
+                continue
             words.add(word.strip().upper())
     return words
 

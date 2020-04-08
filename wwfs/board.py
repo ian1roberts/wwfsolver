@@ -274,8 +274,8 @@ class Board(object):
     def check_collisions(self, square, direction, ending):
         """Check if playing a square would clash with a neighbour word."""
         collisions = []
-        front_hori = ['up', 'down', 'right']
-        back_hori = ['up', 'down', 'left']
+        front_hori = ['up', 'down', 'left']  # addition to front, grow left
+        back_hori = ['up', 'down', 'right']  # adddition to back, grow right
         front_vert = ['up', 'left', 'right']
         back_vert = ['down', 'left', 'right']
         oris = {('front', 0): front_hori, ('back', 0): back_hori,
