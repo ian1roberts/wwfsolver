@@ -90,7 +90,7 @@ class Game(object):
         # Selects highest scoring position.
         if self.mode == 'new':
             # Best first word
-            self.rack.compute_word_scores(self.board, self.tilebag)
+            self.rack.compute_all_play_word_scores(self.board, self.tilebag)
             self.rack.first_word(self.board)
             word = self.rack.best_first_word
         else:

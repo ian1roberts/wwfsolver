@@ -3,9 +3,7 @@
 import pandas as pd
 from functools import total_ordering
 from wwfs.word import Word
-from wwfs.utils import load_dictionary
-
-DICT = load_dictionary()
+from wwfs.config import DICT
 
 key = {"sl": "single letter", "dl": "double letter", "tl": "triple letter",
        "dw": "double word", "tw": "triple word", "c": "center"
@@ -186,12 +184,9 @@ class Board(object):
             front_squares = self.get_square_xy(tmp_word, x, y, word.direction)
             if front_squares is False:
                 return (False, [])
-            print(word)
-            print(candidate)
             for i, j in zip(need_front, front_squares):
                 if j.free:
                     # check neighbour Squares
-                    print('Check Collisions: {}\tj{}'.format(i, j))
                     collisions = self.check_collisions(j, word.direction,
                                                        'front')
                     if collisions:

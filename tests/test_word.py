@@ -5,9 +5,6 @@ from wwfs.board import Board, Square
 from wwfs.tiles import TileBag
 from wwfs.rack import Rack
 
-from wwfs.utils import load_dictionary
-
-DICT = load_dictionary()
 
 _wwfs = p.dirname(p.abspath(__file__))
 test_data = p.join(_wwfs, '..', 'wwfs', 'data')

@@ -31,7 +31,7 @@ class Word(object):
         return False
 
     def compute_word_score(self, squares, tilebag):
-        """Given word and tile squares, compute the word score."""
+        """Given a single word and tile squares, compute the word score."""
         assert len(self.word) == len(squares), "Word doesn't fit error."
         # convert letters to values
         letter_values = [tilebag[letter].value for letter in self.word]
@@ -93,15 +93,15 @@ class Word(object):
         If given rack, subset for playable words (extra letters in rack).
         """
         playable = set()
-        key_letters = Counter([l for l in self.word])
+        key_letters = Counter(self.word)
         matches = [s for s in dictionary
                    if self.word in s and len(s) > len(self)]
         # check that letter differences exist in rack
         if rack:
             for longerword in matches:
-                word_letters = Counter([l for l in longerword])
-                letter_diff = word_letters - key_letters
-                if rack.has_enough_letters(letter_diff, longerword):
+                word_letters = Counter(longerword)
+                letter_diffs = word_letters - key_letters
+                if rack.has_enough_letters(letter_diffs):
                     playable.add(longerword)
         else:
             playable = set(matches)
@@ -114,12 +114,10 @@ class Word(object):
             return (False, False)
         front_overhang = candidate[0: index]
         back_overhang = candidate[index + len(self): len(candidate)]
-        print(candidate, index)
         if front_overhang == self.word or front_overhang == "":
             front_overhang = False
         if back_overhang == self.word or back_overhang == "":
             back_overhang = False
-
         return (front_overhang, back_overhang)
 
 
@@ -128,7 +126,6 @@ class PlayedWords(object):
 
     def __init__(self, **kwargs):
         """Establish a list of played words."""
-        super(PlayedWords, self).__init__()
         self._kwargs = kwargs
         self.words = []
 

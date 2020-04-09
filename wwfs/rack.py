@@ -2,11 +2,9 @@
 import itertools
 from collections import Counter
 from copy import copy
-from wwfs.utils import permute_rack, load_dictionary, is_valid_word
+from wwfs.utils import permute_rack, is_valid_word
 from wwfs.word import Word
-
-ALPHA = list("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
-DICT = load_dictionary()
+from wwfs.config import DICT, ALPHA
 
 
 class Rack(object):
@@ -16,9 +14,9 @@ class Rack(object):
         """Represent an active rack of tiles."""
         self.letters = list(letters.strip().upper())
         self.letters_no_blanks = [x for x in self.letters if x != '0']
+        self.player = player
         if player == 1:
             self.racks = self.make_racks()
-            self.words = set()
             self.compute_rack_words()
         self._dict = DICT
 
@@ -54,14 +52,15 @@ class Rack(object):
 
     def compute_rack_words(self):
         """Permute rack letters to generate list of viable words."""
+        self.words = set()
         for rack in self.racks:
             for word in permute_rack(rack):
                 if is_valid_word(word, DICT):
                     self.words.add(Word(word))
 
-    def compute_word_scores(self, board, tilebag, best=False):
+    def compute_all_play_word_scores(self, board, tilebag):
         """Return the highest scoring word play for all rack words."""
-        scores = set()
+        xword_scores = set()
         for word in self.words:
             for i, square in enumerate(board):
                 for d in (0, 1):
@@ -71,9 +70,9 @@ class Rack(object):
                         xword.compute_word_score(squares, tilebag)
                         xword.coord = square.coord
                         xword.direction = d
-                        scores.add(xword)
+                        xword_scores.add(xword)
 
-        self.word_scores = sorted(list(scores), key=lambda x: (-x.score,
+        self.word_scores = sorted(list(xword_scores), key=lambda x: (-x.score,
                                   x.word, x.x, x.y, x.direction))
 
     def first_word(self, board):
@@ -84,11 +83,11 @@ class Rack(object):
                 break
         self.best_first_word = word
 
-    def has_enough_letters(self, ldiff, word):
+    def has_enough_letters(self, ldiffs):
         """Return True if a rack has enough letters to play word."""
         for rack in self.counter_racks:
-            totdiff = sum(ldiff.values())
-            for l, c in ldiff.items():
+            totdiff = sum(ldiffs.values())
+            for l, c in ldiffs.items():
                 if l in rack:
                     count = rack[l]
                     totdiff -= count

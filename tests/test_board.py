@@ -4,9 +4,6 @@ from pandas import DataFrame
 from wwfs.board import Board, Square
 from wwfs.word import Word
 
-from wwfs.utils import load_dictionary
-
-DICT = load_dictionary()
 
 _wwfs = p.dirname(p.abspath(__file__))
 test_data = p.join(_wwfs, '..', 'wwfs', 'data')
@@ -105,6 +102,7 @@ def test_collides(myboard, target, ori, test_yes):
 ])
 def test_check_collision(myboard, target, direction, ending, expected):
     """Test that we can detect colliding words."""
+    # TODO: Test only checks collisions on extended words. Generalize.
     # This is a wrapper to collides function.
     # Test by making all adjacent squares occupied if collision expected
     for ori in ['left', 'right', 'up', 'down']:
@@ -125,10 +123,5 @@ def test_board_width(myboard):
 
 def test_board_height(myboard):
     assert myboard.height == 11
-
-
-
-
-
 
 # TODO: is_valid_move_extends (after Word)

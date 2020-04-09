@@ -3,9 +3,7 @@ from os import path as p
 from wwfs.board import Square
 from wwfs.word import Word
 
-from wwfs.utils import load_dictionary
-
-DICT = load_dictionary()
+from wwfs.config import DICT
 
 _wwfs = p.dirname(p.abspath(__file__))
 test_data = p.join(_wwfs, '..', 'wwfs', 'data')
