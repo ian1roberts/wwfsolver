@@ -1,15 +1,14 @@
 """Classes that define Words."""
+from abc import ABC, abstractmethod
 from functools import reduce, total_ordering
-from collections import Counter
 
 
 @total_ordering
-class Word(object):
+class BaseWord(ABC):
     """Represent a played word."""
 
     def __init__(self, word, **kwargs):
         """Establish a played word instance."""
-        super(Word, self).__init__()
         self._kwargs = kwargs
         self.word = word.strip().upper()
         self.coord = kwargs.get('coord', False)
@@ -30,6 +29,7 @@ class Word(object):
             return self.coord[1]
         return False
 
+    @abstractmethod
     def compute_word_score(self, squares, tilebag):
         """Given a single word and tile squares, compute the word score."""
         assert len(self.word) == len(squares), "Word doesn't fit error."
@@ -88,37 +88,37 @@ class Word(object):
         newone.__dict__.update(self.__dict__)
         return newone
 
-    def get_word_extensions(self, dictionary, rack=None):
-        """Return all words longer than word containing word.
-        If given rack, subset for playable words (extra letters in rack).
-        """
-        playable = set()
-        key_letters = Counter(self.word)
-        matches = [s for s in dictionary
-                   if self.word in s and len(s) > len(self)]
-        # check that letter differences exist in rack
-        if rack:
-            for longerword in matches:
-                word_letters = Counter(longerword)
-                letter_diffs = word_letters - key_letters
-                if rack.has_enough_letters(letter_diffs):
-                    playable.add(longerword)
-        else:
-            playable = set(matches)
-        return playable
 
-    def get_letter_overhangs(self, candidate):
-        """Return the front / back letter overhangs of word in candidate."""
-        index = candidate.find(self.word)
-        if index < 0:
-            return (False, False)
-        front_overhang = candidate[0: index]
-        back_overhang = candidate[index + len(self): len(candidate)]
-        if front_overhang == self.word or front_overhang == "":
-            front_overhang = False
-        if back_overhang == self.word or back_overhang == "":
-            back_overhang = False
-        return (front_overhang, back_overhang)
+class Word(BaseWord):
+    """Represent simple words. No extensions, crosses runs."""
+
+    def __init__(self, word, **kwargs):
+        super(Word, self).__init__(word, **kwargs)
+
+    def compute_word_score(self, squares, tilebag):
+        """Given simple straight words, compute standard word score."""
+        super().compute_word_score(squares, tilebag)
+
+
+class WordExtension(BaseWord):
+    """Represent an extended word."""
+
+    def __init__(self, word, **kwargs):
+        super().__init__(word, **kwargs)
+
+    def compute_word_score(self, squares, tilebag):
+        """Given a word extension, compute turn score."""
+        super().compute_word_score(squares, tilebag)
+
+
+class BonusWord(BaseWord):
+    """Represent an additional word created by playing another."""
+
+    def __init__(self, word, **kwargs):
+        super().__init__(word, **kwargs)
+
+    def compute_word_score(self, squares, tilebag):
+        """Bonus words only count letter scores."""
 
 
 class PlayedWords(object):

@@ -1,4 +1,7 @@
 from wwfs.config import DICT
+import wwfs.extends as extends
+import wwfs.crosses as crosses
+import wwfs.runalongs as runs
 
 
 class Turn(object):
@@ -10,7 +13,7 @@ class Turn(object):
         self.all_played = played_words
         self.board = board
         if not debug:
-            self.word_extensions = self.get_valid_word_extensions()
+            self.get_valid_word_extensions()
             self.word_crosses = self.get_valid_word_crosses()
             self.word_runs = self.get_valid_word_runs()
             self.best_word()
@@ -18,19 +21,15 @@ class Turn(object):
     def get_valid_word_extensions(self):
         """Compute all possible word extensions."""
         # get all extensions of played words
-        playable = dict(zip([x for x in self.all_played],
-                            [set() for _ in self.all_played]))
+        self.word_extensions = []
         for word in self.all_played:
-            candidates = word.get_word_extensions(DICT, self.rack)
+            candidates = extends.get_word_extensions(word, DICT, self.rack)
             if candidates:
                 for candidate in candidates:
-                    is_valid, bwords = self.board.is_valid_move_extends(
-                                                               word, candidate)
+                    is_valid, bonus_words = extends.is_valid_move_extention(
+                                                self.board, word, candidate)
                     if is_valid:
-                        playable[word].add(candidate)
-                    if len(bwords) > 0:
-                        [playable[word].add(x) for x in bwords]
-        return playable
+                        self.word_extensions.append((is_valid, bonus_words))
 
     def get_valid_word_crosses(self):
         """Compute all possible word overlaps. Mainly rack words."""
@@ -40,4 +39,8 @@ class Turn(object):
 
     def best_word(self):
         """Compute_best move."""
+        playable = set()
+        # collect all candidates
+        for word, bonus in self.word_extensions:
+            print(word, bonus)
         #  return word

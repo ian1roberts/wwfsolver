@@ -8,27 +8,39 @@ from wwfs.config import DICT, ALPHA
 
 
 class Rack(object):
-    """Represents my rack of game letters."""
+    """Represents my rack of game letters.
 
+    Game play logic.
+    1. First turn --> first word can only be made from rack letters.
+    2. Subsequent turns --> words must contain existing word letters.
+        There are 3 possible move types:
+            1. extend an existing word
+            2. cross an existing word
+            3. run along an existing word
+        Word play may be a valid word with rack letters only or valid by
+        incorporating existing played letters
+
+        Word play may produce one or more valid words.
+    """
     def __init__(self, letters, player=1):
         """Represent an active rack of tiles."""
         self.letters = list(letters.strip().upper())
         self.letters_no_blanks = [x for x in self.letters if x != '0']
         self.player = player
+        self.racks = []
         if player == 1:
-            self.racks = self.make_racks()
+            # TODO: add played board letters to racks if accsesible to play
+            self.make_racks()  # solve blanks
             self.compute_rack_words()
-        self._dict = DICT
 
-    def make_racks(self):
-        """Return all playable racks by solving blanks."""
-        racks = []
-        self.counter_racks = []
+    @property
+    def nblanks(self):
+        """Return the number of blanks in rack."""
+        return len(self.letters) - len(self.letters_no_blanks)
 
-        # Handle blanks
-        n_blanks = sum([1 for x in self.letters if x == '0'])
-
-        if n_blanks == 2:
+    def racks_from_blanks(self):
+        """Add racks from solving blanks."""
+        if self.nblanks == 2:
             x = itertools.product(ALPHA, repeat=2)
             d = set()
             for i in x:
@@ -36,27 +48,35 @@ class Rack(object):
                 dd = list(d)
                 dd.sort()
             for d in dd:
-                racks.append(list(d) + self.letters_no_blanks)
                 rc = Counter(list(d) + self.letters_no_blanks)
-                self.counter_racks.append(rc)
-        elif n_blanks == 1:
-            for A in ALPHA:
-                racks.append([A, ] + self.letters_no_blanks)
-                rc = Counter([A, ] + self.letters_no_blanks)
-                self.counter_racks.append(rc)
-        else:
-            racks.append(self.letters_no_blanks)
-            self.counter_racks.append(Counter(self.letters_no_blanks))
+                self.racks.append(rc)
+            return
 
-        return racks
+        for A in ALPHA:
+            rc = Counter([A, ] + self.letters_no_blanks)
+            self.racks.append(rc)
 
-    def compute_rack_words(self):
+    def racks_from_played_word(self, word):
+        """Extend racks from played word."""
+
+    def make_racks(self):
+        """Compute all playable racks by solving blanks."""
+        # 1. Generate racks from blanks
+        if self.nblanks:
+            self.racks_from_blanks()
+
+        # 2. Add in rack from nonblanks
+        if not self.nblanks:
+            self.racks.append(Counter(self.letters_no_blanks))
+
+    def compute_rack_words(self, WordType=Word):
         """Permute rack letters to generate list of viable words."""
         self.words = set()
         for rack in self.racks:
-            for word in permute_rack(rack):
+            for word in permute_rack(list(rack.elements())):
                 if is_valid_word(word, DICT):
-                    self.words.add(Word(word))
+                    # TODO: Handle extends, crosses and run alongs
+                    self.words.add(WordType(word))  # Simple rack words only
 
     def compute_all_play_word_scores(self, board, tilebag):
         """Return the highest scoring word play for all rack words."""
@@ -85,7 +105,7 @@ class Rack(object):
 
     def has_enough_letters(self, ldiffs):
         """Return True if a rack has enough letters to play word."""
-        for rack in self.counter_racks:
+        for rack in self.racks:
             totdiff = sum(ldiffs.values())
             for l, c in ldiffs.items():
                 if l in rack:

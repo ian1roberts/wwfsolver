@@ -2,8 +2,9 @@
 
 import pandas as pd
 from functools import total_ordering
-from wwfs.word import Word
 from wwfs.config import DICT
+from wwfs.word import BonusWord
+# from wwfs.wwfsexception import CollisionError
 
 key = {"sl": "single letter", "dl": "double letter", "tl": "triple letter",
        "dw": "double word", "tw": "triple word", "c": "center"
@@ -50,39 +51,45 @@ class Square(object):
         """Return True if square is the center square."""
         return True if self.tile_multiplier_name == "center" else False
 
-    def collision(self, ori, candidate, direction, DICT=DICT):
+    def collision_word(self, ori, candidate, direction, side_letter,
+                       DICT=DICT):
         """Return word collision if valid, else False."""
         collision_words = set()
-        print("Ori:{} Cand:{} Direct:{}".format(ori, candidate, direction))
-        if ori == 'left' and direction == 0:
-            for pword in self.parent_word:
-                if pword.direction == 0:
-                    cword = pword.word + candidate
-                    if cword not in DICT:
-                        return False
-                    collision_words.add(cword)
-        if ori == 'right' and direction == 0:
-            for pword in self.parent_word:
-                if pword.direction == 0:
-                    cword = candidate + pword.word
-                    if cword not in DICT:
-                        return False
-                    collision_words.add(cword)
-        if ori == 'up' and direction == 1:
-            for pword in self.parent_word:
-                if pword.direction == 1:
-                    cword = pword.word + candidate
-                    if cword not in DICT:
-                        return False
-                    collision_words.add(cword)
-        if ori == 'down' and direction == 1:
-            for pword in self.parent_word:
-                if pword.direction == 1:
-                    cword = candidate + pword.word
-                    if cword not in DICT:
-                        return False
-                    collision_words.add(cword)
-        # TODO: Run alongs are not handled by this method.
+        for parent_word in self.parent_word:
+            crash_word = {
+                            ("left", 0, 0): (parent_word.word, candidate),
+                            ("left", 1, 0): (self.tile_letter, candidate),
+                            ("left", 0, 1): (parent_word.word, side_letter),
+                            ("left", 1, 1): (self.tile_letter, side_letter),
+                            ("right", 0, 0): (candidate, parent_word.word),
+                            ("right", 1, 0): (side_letter, parent_word.word),
+                            ("right", 0, 1): (candidate, self.tile_letter),
+                            ("right", 1, 1): (side_letter, self.tile_letter),
+                            ("up", 0, 0): (self.tile_letter, side_letter),
+                            ("up", 1, 0): (parent_word.word, side_letter),
+                            ("up", 0, 1): (self.tile_letter, candidate),
+                            ("up", 1, 1): (parent_word.word, candidate),
+                            ("down", 0, 0): (side_letter, self.tile_letter),
+                            ("down", 1, 0): (candidate, self.tile_letter),
+                            ("down", 0, 1): (side_letter, parent_word.word),
+                            ("down", 1, 1): (candidate, parent_word.word)
+                        }[(ori, parent_word.direction, direction)]
+            bword = "".join(crash_word)
+            if bword not in DICT:
+                return False
+            a, b = crash_word
+            if type(a) == str:
+                coord = (self.coord)
+                bd = direction
+            else:
+                coord = parent_word.coord
+                bd = parent_word.direction
+            bword = BonusWord(bword, coord=coord, direction=bd)
+            print(bword)
+            bword.left_part = a
+            bword.right_part = b
+            collision_words.add(bword)
+
         return collision_words
 
 
@@ -163,89 +170,7 @@ class Board(object):
                 square.tile_used = False
             square.parent_word.append(word)
 
-    def is_valid_move_extends(self, word, candidate):
-        """Candidate word can be legally played on top of word on board."""
-        #  get letter / square overhangs
-        need_front, need_back = word.get_letter_overhangs(candidate)
-        #  test overhangs are playable
-        bonus_words = []
-        if need_front:
-            if word.direction == 0:
-                x = word.x
-                y = word.y - len(need_front)
-                if x < 0:
-                    return (False, [])
-            else:
-                x = word.x - len(need_front)
-                y = word.y
-                if y < 0:
-                    return (False, [])
-            tmp_word = Word(need_front, coord=(x, y), direction=word.direction)
-            front_squares = self.get_square_xy(tmp_word, x, y, word.direction)
-            if front_squares is False:
-                return (False, [])
-            for i, j in zip(need_front, front_squares):
-                if j.free:
-                    # check neighbour Squares
-                    collisions = self.check_collisions(j, word.direction,
-                                                       'front')
-                    if collisions:
-                        for (ori, collides) in collisions:
-                            collision_word = collides.collision(ori,
-                                                                candidate,
-                                                                word.direction)
-                            if not collision_word:
-                                return (False, [])
-                            else:
-                                for bword in collision_word:
-                                    bonus_words.append(bword)
-
-                elif j.tile_letter == i:
-                    continue
-                else:
-                    return (False, [])
-
-        if need_back:
-            if word.direction == 0:
-                x = word.x
-                y = word.y + len(word)
-                if x >= self.width:
-                    return (False, [])
-            else:
-                x = word.x + len(word)
-                y = word.y
-                if y >= self.height:
-                    return (False, [])
-            tmp_word = Word(need_back, coord=(x, y), direction=word.direction)
-            back_squares = self.get_square_xy(tmp_word, x, y, word.direction)
-            if back_squares is False:
-                return (False, [])
-            for i, j in zip(need_back, back_squares):
-                if j.free:
-                    # check neighbour Squares
-                    collisions = self.check_collisions(j, word.direction,
-                                                       'back')
-                    if collisions:
-                        for (ori, collides) in collisions:
-                            collision_word = collides.collision(ori,
-                                                                candidate,
-                                                                word.direction)
-                            if not collision_word:
-                                return (False, [])
-                            else:
-                                for bword in collision_word:
-                                    bonus_words.append(bword)
-                elif j.tile_letter == i:
-                    continue
-                else:
-                    return (False, [])
-
-        # check whether extra words have been made
-        if bonus_words:
-            return (True, bonus_words)
-        return (True, [])
-
-    def collides(self, square, ori):
+    def collides_on_side(self, square, ori):
         """Returns true if tested square collides with adjacent square ori."""
         x, y = square.coord
         if ori == 'up':
@@ -267,7 +192,10 @@ class Board(object):
         return adjacent
 
     def check_collisions(self, square, direction, ending):
-        """Check if playing a square would clash with a neighbour word."""
+        """Check if playing a square would clash with a neighbour word.
+        Returns the colliding squares, adjacent of the Target letter.
+        [("up", adj.square), ... ]
+        """
         collisions = []
         front_hori = ['up', 'down', 'left']  # addition to front, grow left
         back_hori = ['up', 'down', 'right']  # adddition to back, grow right
@@ -277,7 +205,7 @@ class Board(object):
                 ('front', 1): front_vert, ('back', 1): back_vert}[
                                                         (ending, direction)]
         for ori in oris:
-            check_square = self.collides(square, ori)
+            check_square = self.collides_on_side(square, ori)
             if check_square:
                 collisions.append((ori, check_square))
         return collisions

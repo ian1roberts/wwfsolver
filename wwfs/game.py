@@ -80,16 +80,22 @@ class Game(object):
     def take_turn(self):
         """Make the turn. Compute best word and play it."""
         if self.player == 1:
-            self.player1_turn()
+            word = self.player1_turn()
+            word.player = 1
         else:
-            self.player2_turn()
+            word = self.player2_turn()
+            word.player = 2
+        word.played = True
+        self.board.play_word(word)
+        self.status.update(word)
+        self.tilebag.update(word)
 
     def player1_turn(self):
         """Player 1 takes a turn."""
         # TODO: Player 1 new game; first turn. Places best rack word on board.
         # Selects highest scoring position.
         if self.mode == 'new':
-            # Best first word
+            # Best first word --> Is only a simple straight word
             self.rack.compute_all_play_word_scores(self.board, self.tilebag)
             self.rack.first_word(self.board)
             word = self.rack.best_first_word
@@ -98,18 +104,10 @@ class Game(object):
             # Computes highest scoring move across all exisitng viable moves.
             next_move = Turn(self.rack, self.status.all_played, self.board)
             # Extend existing word
+            # Cross existing words
+            # Run along exisiting words
             word = next_move.best_word()
-
-            # Cross existing word
-            # Play along side existing words
-        # Play the word
-        self.board.play_word(word)
-        word.player = 1
-        word.played = True
-
-        # Update status logs
-        self.status.update(word)
-        self.tilebag.update(word)
+        return word
 
     def player2_turn(self):
         """Player 2 takes a turn."""
@@ -119,12 +117,7 @@ class Game(object):
         word.squares = self.board.get_square_xy(word, word.x, word.y,
                                                 word.direction)
         word.compute_word_score(word.squares, self.tilebag)
-        word.player = 2
-        self.board.play_word(word)
-        word.played = True
-        # Update status logs
-        self.status.update(word)
-        self.tilebag.update(word)
+        return word
 
     def print_board(self):
         """Quick dump of game board. Needs prettifying."""
