@@ -102,7 +102,8 @@ class Game(object):
         else:
             # TODO: Player 1 continues game. Places best word on current board.
             # Computes highest scoring move across all exisitng viable moves.
-            next_move = Turn(self.rack, self.status.all_played, self.board)
+            next_move = Turn(self.rack, self.status.all_played, self.board,
+                             self.tilebag)
             # Extend existing word
             # Cross existing words
             # Run along exisiting words

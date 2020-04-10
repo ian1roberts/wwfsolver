@@ -1,6 +1,6 @@
 """Classes that define Words."""
 from abc import ABC, abstractmethod
-from functools import reduce, total_ordering
+from functools import total_ordering
 
 
 @total_ordering
@@ -36,30 +36,26 @@ class BaseWord(ABC):
         # convert letters to values
         letter_values = [tilebag[letter].value for letter in self.word]
         pair = zip(letter_values, squares)
-        ls = []
-        wms = []
-        wm = 1
-        for lv, m in pair:
-            if m.tile_multiplier_name == 'triple word':
-                wms.append(3)
-                ls.append(lv)
-            elif (m.tile_multiplier_name == 'double word' or
-                  m.tile_multiplier_name == 'center'):
-                wms.append(2)
-                ls.append(lv)
-            elif m.tile_multiplier_name == 'single letter':
-                ls.append(lv)
-            elif m.tile_multiplier_name == 'double letter':
-                ls.append(lv * 2)
-            elif m.tile_multiplier_name == 'triple letter':
-                ls.append(lv * 3)
-        ls = sum(ls)
-        if len(wms) > 0:
-            wm = reduce((lambda x, y: x * y), wms)
-        self.score = (ls * wm)
+        letter_scores = []
+        word_multipliers = []
+        for letter_value, square in pair:
+            if square.free:
+                letter_scores.append(
+                                letter_value * square.letter_value_multiplier)
+                word_multipliers.append(square.word_value_multiplier)
+            else:
+                letter_scores.append(letter_value)
+                word_multipliers.append(1)
+
+        letter_sum = sum(letter_scores)
+        wm_total = 1
+        while word_multipliers:
+            wm = word_multipliers.pop()
+            wm_total *= wm
+        self.score = letter_sum * wm_total
 
     def __repr__(self):
-        return "wwfs.Word: {}".format(self.word)
+        return "{} {}".format(self.__class__, self.word)
 
     def __str__(self):
         return "word:{} at:{}:{} score:{}".format(self.word, self.coord,
@@ -104,11 +100,23 @@ class WordExtension(BaseWord):
     """Represent an extended word."""
 
     def __init__(self, word, **kwargs):
-        super().__init__(word, **kwargs)
+        # super().__init__(word, **kwargs)
+        self.word = word
+        self.parent = kwargs.get("parent", None)
+        self.front_part = kwargs.get("front", None)
+        self.back_part = kwargs.get("back", None)
+        self.front_part_xy = None
+        self.back_part_xy = None
 
     def compute_word_score(self, squares, tilebag):
         """Given a word extension, compute turn score."""
         super().compute_word_score(squares, tilebag)
+
+    @property
+    def coord(self):
+        if not self.front_part_xy:
+            return self.parent.coord
+        return self.front_part_xy
 
 
 class BonusWord(BaseWord):
@@ -117,8 +125,9 @@ class BonusWord(BaseWord):
     def __init__(self, word, **kwargs):
         super().__init__(word, **kwargs)
 
-    def compute_word_score(self, squares, tilebag):
+    def compute_word_score(self, tilebag):
         """Bonus words only count letter scores."""
+        self.score = sum([tilebag[letter].value for letter in self.word])
 
 
 class PlayedWords(object):

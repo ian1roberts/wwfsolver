@@ -7,11 +7,15 @@ import wwfs.runalongs as runs
 class Turn(object):
     """Calculate best legal word move in game."""
 
-    def __init__(self, rack, played_words, board, debug=False):
+    def __init__(self, rack, played_words, board, tilebag, debug=False):
         """Construct the board for analysis."""
         self.rack = rack
         self.all_played = played_words
         self.board = board
+        self.tilebag = tilebag
+        self.turn_word = None
+        self.turn_bonus_words = None
+        self.turn_score = None
         if not debug:
             self.get_valid_word_extensions()
             self.word_crosses = self.get_valid_word_crosses()
@@ -27,7 +31,8 @@ class Turn(object):
             if candidates:
                 for candidate in candidates:
                     is_valid, bonus_words = extends.is_valid_move_extention(
-                                                self.board, word, candidate)
+                                                self.board, word, candidate,
+                                                self.tilebag)
                     if is_valid:
                         self.word_extensions.append((is_valid, bonus_words))
 

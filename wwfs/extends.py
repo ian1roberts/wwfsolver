@@ -58,7 +58,6 @@ def move_extends_front_back(side, x, y, direction, board, label, candidate):
                                         ori, candidate, tmp_word.direction,
                                         side_letter)
                     #  If collision_word is False .. collision detected
-                    print(collision_word)
                     if not collision_word:
                         return (False, [])
                     else:
@@ -70,22 +69,24 @@ def move_extends_front_back(side, x, y, direction, board, label, candidate):
     return (True, bonus_words)
 
 
-def is_valid_move_extention(board, word, candidate):
+def is_valid_move_extention(board, word, candidate, tilebag):
     """Candidate word can be legally played on top of word on board."""
     #  get letter / square overhangs
     need_front, need_back = get_letter_overhangs(word, candidate)
     if not (need_front or need_back):
         return False
-    candidate_word_extension = WordExtension(candidate, parent=word)
+    candidate_word_extension = WordExtension(candidate,
+                                             parent=word, front=need_front,
+                                             back=need_back)
     #  test overhangs are playable
     bonus_words = []
     if word.direction == 0:
+        candidate_word_extension.direction = 0
         x = word.x
         if need_front:
             y = word.y - len(need_front)
             if y < 0:
                 return (False, [])
-            candidate_word_extension.front_part = need_front
             candidate_word_extension.front_part_xy = (x, y)
             validmove, bonus_word = move_extends_front_back(
                         need_front, x, y, 0, board, "front", candidate)
@@ -97,7 +98,6 @@ def is_valid_move_extention(board, word, candidate):
             y = word.y + len(word)
             if y + len(need_back) > board.width:
                 return (False, [])
-            candidate_word_extension.back_part = need_front
             candidate_word_extension.back_part_xy = (x, y)
             validmove, bonus_word = move_extends_front_back(
                         need_back, x, y, 0, board, "back", candidate)
@@ -106,12 +106,12 @@ def is_valid_move_extention(board, word, candidate):
             if bonus_word:
                 bonus_words += bonus_word
     else:
+        candidate_word_extension.direction = 1
         y = word.y
         if need_front:
             x = word.x - len(need_front)
             if x < 0:
                 return (False, [])
-            candidate_word_extension.front_part = need_front
             candidate_word_extension.front_part_xy = (x, y)
             validmove, bonus_word = move_extends_front_back(
                         need_front, x, y, 1, board, "front", candidate)
@@ -123,7 +123,6 @@ def is_valid_move_extention(board, word, candidate):
             x = word.x + len(word)
             if x + len(need_back) > board.width:
                 return (False, [])
-            candidate_word_extension.back_part = need_front
             candidate_word_extension.back_part_xy = (x, y)
             validmove, bonus_word = move_extends_front_back(
                         need_back, x, y, 1, board, "back", candidate)
@@ -131,5 +130,16 @@ def is_valid_move_extention(board, word, candidate):
                 return (False, [])
             if bonus_word:
                 bonus_words += bonus_word
+
+    candidate_word_extension.squares = board.get_square_xy(
+                candidate_word_extension.word,
+                candidate_word_extension.x, candidate_word_extension.y,
+                candidate_word_extension.direction)
+
+    candidate_word_extension.compute_word_score(
+                candidate_word_extension.squares, tilebag)
+    if bonus_words:
+        for bwd in bonus_words:
+            bwd.compute_word_score(tilebag)
 
     return (candidate_word_extension, bonus_words)

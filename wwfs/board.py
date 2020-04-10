@@ -4,11 +4,6 @@ import pandas as pd
 from functools import total_ordering
 from wwfs.config import DICT
 from wwfs.word import BonusWord
-# from wwfs.wwfsexception import CollisionError
-
-key = {"sl": "single letter", "dl": "double letter", "tl": "triple letter",
-       "dw": "double word", "tw": "triple word", "c": "center"
-       }
 
 
 @total_ordering
@@ -17,6 +12,11 @@ class Square(object):
 
        Squares hold letter tiles.
     """
+    key_code = {"sl": "single letter", "dl": "double letter", "tl":
+                "triple letter", "dw": "double word", "tw": "triple word",
+                "c": "center"
+                }
+    key_value = {"sl": 1, "dl": 2, "tl": 3, "dw": 2, "tw": 3, "c": 2}
 
     def __init__(self, x, y, tilemultiplier):
         """Represent a Square on the board, given a tile code multiplier."""
@@ -24,11 +24,14 @@ class Square(object):
         self.y = y
         self.coord = (x, y)
         self.tile_multiplier = tilemultiplier
-        self.tile_multiplier_name = key[tilemultiplier]
+        self.tile_multiplier_name = self.key_code[tilemultiplier]
+        self.letter_value_multiplier = None
+        self.word_value_multiplier = None
         self.tile_letter = ""
         self.player = -1
         self.parent_word = []
         self.free = True
+        self.get_multipliers()
 
     def __hash__(self):
         return hash((self.x, self.y, self.tile_multiplier_name))
@@ -42,9 +45,24 @@ class Square(object):
 
     def __str__(self):
         """x:0    y:0 v:single letter letter."""
-        return "x:{}\ty:{}\tv:{}\t{}".format(self.x, self.y,
-                                             self.tile_multiplier_name,
-                                             self.tile_letter)
+        return "x:{}\ty:{}\tv:{}\t{}\tlvm:{}\twvm:{}\tis_free:{}".format(
+                self.x, self.y, self.tile_multiplier_name,
+                self.tile_letter, self.letter_value_multiplier,
+                self.word_value_multiplier, self.free)
+
+    @property
+    def is_word_multiplier(self):
+        """Return True if square is a word multiplier"""
+        return True if self.tile_multiplier in ['dw', 'tw', 'c'] else False
+
+    def get_multipliers(self):
+        """Return word or letter multiplier value."""
+        if self.is_word_multiplier:
+            self.word_value_multiplier = self.key_value[self.tile_multiplier]
+            self.letter_value_multiplier = 1
+        else:
+            self.letter_value_multiplier = self.key_value[self.tile_multiplier]
+            self.word_value_multiplier = 1
 
     @property
     def is_center_square(self):
@@ -56,40 +74,48 @@ class Square(object):
         """Return word collision if valid, else False."""
         collision_words = set()
         for parent_word in self.parent_word:
-            crash_word = {
-                            ("left", 0, 0): (parent_word.word, candidate),
-                            ("left", 1, 0): (self.tile_letter, candidate),
-                            ("left", 0, 1): (parent_word.word, side_letter),
-                            ("left", 1, 1): (self.tile_letter, side_letter),
-                            ("right", 0, 0): (candidate, parent_word.word),
-                            ("right", 1, 0): (side_letter, parent_word.word),
-                            ("right", 0, 1): (candidate, self.tile_letter),
-                            ("right", 1, 1): (side_letter, self.tile_letter),
-                            ("up", 0, 0): (self.tile_letter, side_letter),
-                            ("up", 1, 0): (parent_word.word, side_letter),
-                            ("up", 0, 1): (self.tile_letter, candidate),
-                            ("up", 1, 1): (parent_word.word, candidate),
-                            ("down", 0, 0): (side_letter, self.tile_letter),
-                            ("down", 1, 0): (candidate, self.tile_letter),
-                            ("down", 0, 1): (side_letter, parent_word.word),
-                            ("down", 1, 1): (candidate, parent_word.word)
+            bonus_word = {
+                            ("left", 0, 0): (parent_word.word, candidate,
+                                             parent_word.coord, 0),
+                            ("left", 1, 0): (self.tile_letter, candidate,
+                                             self.coord, 0),
+                            ("left", 0, 1): (parent_word.word, side_letter,
+                                             parent_word.coord, 0),
+                            ("left", 1, 1): (self.tile_letter, side_letter,
+                                             self.coord, 0),
+                            ("right", 0, 0): (candidate, parent_word.word,
+                                              self.coord, 0),
+                            ("right", 1, 0): (side_letter, parent_word.word,
+                                              self.coord, 0),
+                            ("right", 0, 1): (candidate, self.tile_letter,
+                                              self.coord, 0),
+                            ("right", 1, 1): (side_letter, self.tile_letter,
+                                              self.coord, 0),
+                            ("up", 0, 0): (self.tile_letter, side_letter,
+                                           self.coord, 1),
+                            ("up", 1, 0): (parent_word.word, side_letter,
+                                           parent_word.coord, 1),
+                            ("up", 0, 1): (self.tile_letter, candidate,
+                                           self.coord, 1),
+                            ("up", 1, 1): (parent_word.word, candidate,
+                                           parent_word.coord, 1),
+                            ("down", 0, 0): (side_letter, self.tile_letter,
+                                             self.coord, 1),
+                            ("down", 1, 0): (candidate, self.tile_letter,
+                                             self.coord, 1),
+                            ("down", 0, 1): (side_letter, parent_word.word,
+                                             self.coord, 1),
+                            ("down", 1, 1): (candidate, parent_word.word,
+                                             self.coord, 1)
                         }[(ori, parent_word.direction, direction)]
-            bword = "".join(crash_word)
-            if bword not in DICT:
+            bonus_word_string = "".join(bonus_word[0:2])
+            if bonus_word_string not in DICT:
                 return False
-            a, b = crash_word
-            if type(a) == str:
-                coord = (self.coord)
-                bd = direction
-            else:
-                coord = parent_word.coord
-                bd = parent_word.direction
-            bword = BonusWord(bword, coord=coord, direction=bd)
-            print(bword)
+            a, b, coord, bd = bonus_word
+            bword = BonusWord(bonus_word_string, coord=coord, direction=bd)
             bword.left_part = a
             bword.right_part = b
             collision_words.add(bword)
-
         return collision_words
 
 
