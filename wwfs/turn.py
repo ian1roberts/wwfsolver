@@ -13,9 +13,6 @@ class TurnData(object):
         self.rack = kwargs.get("rack", None)
         self.board = kwargs.get('board', None)
         self.tilebag = kwargs.get('tilebag', None)
-        self.word_extensions = []
-        self.word_crosses = []
-        self.word_runs = []
 
 
 def do_task(xfunc, word, turn_data):
@@ -33,7 +30,7 @@ class Turn(object):
         self.turn_word = None
         self.turn_bonus_words = None
         self.turn_score = None
-        self.proc_ids = []
+        self.results = []
         if not debug:
             self.compute_move()
             # self.best_word()
@@ -52,7 +49,7 @@ class Turn(object):
         for xproc in processes:
             xproc.get()
         while not self.turn_data.queue.empty():
-            self.proc_ids.append(self.turn_data.queue.get())
+            self.results.append(self.turn_data.queue.get())
 
     def best_word(self):
         """Compute_best move."""

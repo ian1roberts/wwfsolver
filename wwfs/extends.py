@@ -1,5 +1,4 @@
 """Compute word extensions."""
-import os
 from collections import Counter
 from wwfs.word import Word, WordExtension
 from wwfs.config import DICT
@@ -7,7 +6,7 @@ from wwfs.config import DICT
 
 def get_valid_word_extensions(word, job_data):
     """Wrapper to word extension computation. Makes it parallelizable."""
-    job_data.queue.put(os.getpid())
+    word_extensions = []
     candidates = get_word_extensions(word, DICT, job_data.rack)
     if candidates:
         for candidate in candidates:
@@ -17,10 +16,11 @@ def get_valid_word_extensions(word, job_data):
             if is_valid:
                 tot_score = is_valid.score + sum(
                                         [x.score for x in bonus_words])
-                job_data.word_extensions.append(
-                                            (is_valid, bonus_words, tot_score))
-    # print("Word Extensions for {} done. {} found.".format(
-    #                                     word, len(job_data.word_extensions)))
+                word_extensions.append((word, is_valid, bonus_words,
+                                        tot_score))
+    print("Word Extensions for {} done. {} found.".format(
+                                        word, len(word_extensions)))
+    job_data.queue.put(word_extensions)
 
 
 def get_word_extensions(word, dictionary, rack=None):

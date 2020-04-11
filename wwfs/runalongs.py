@@ -1,11 +1,10 @@
 """Compute word runalongs."""
-import os
 from wwfs.config import DICT
 
 
 def get_valid_word_runs(word, job_data):
     """Compute all possible word run along."""
-    job_data.queue.put(os.getpid())
+    word_runs = []
     candidates = get_word_runs(word, DICT, job_data.rack)
     if candidates:
         for candidate in candidates:
@@ -15,9 +14,10 @@ def get_valid_word_runs(word, job_data):
             if is_valid:
                 tot_score = is_valid.score + sum(
                                         [x.score for x in bonus_words])
-                job_data.word_runs.append((is_valid, bonus_words, tot_score))
+                word_runs.append((word, is_valid, bonus_words, tot_score))
     # print("Word Runalongs for {} done. {} found.".format(
     #                                     word, len(job_data.word_runs)))
+    job_data.queue.put(word_runs)
 
 
 def get_word_runs(word, DICT, rack):
