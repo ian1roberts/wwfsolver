@@ -1,6 +1,26 @@
 """Compute word extensions."""
+import os
 from collections import Counter
 from wwfs.word import Word, WordExtension
+from wwfs.config import DICT
+
+
+def get_valid_word_extensions(word, job_data):
+    """Wrapper to word extension computation. Makes it parallelizable."""
+    job_data.queue.put(os.getpid())
+    candidates = get_word_extensions(word, DICT, job_data.rack)
+    if candidates:
+        for candidate in candidates:
+            is_valid, bonus_words = is_valid_move(
+                                        job_data.board, word,
+                                        candidate, job_data.tilebag)
+            if is_valid:
+                tot_score = is_valid.score + sum(
+                                        [x.score for x in bonus_words])
+                job_data.word_extensions.append(
+                                            (is_valid, bonus_words, tot_score))
+    # print("Word Extensions for {} done. {} found.".format(
+    #                                     word, len(job_data.word_extensions)))
 
 
 def get_word_extensions(word, dictionary, rack=None):
@@ -69,7 +89,7 @@ def move_extends_front_back(side, x, y, direction, board, label, candidate):
     return (True, bonus_words)
 
 
-def is_valid_move_extention(board, word, candidate, tilebag):
+def is_valid_move(board, word, candidate, tilebag):
     """Candidate word can be legally played on top of word on board."""
     #  get letter / square overhangs
     need_front, need_back = get_letter_overhangs(word, candidate)

@@ -1,7 +1,26 @@
-from wwfs.config import DICT
-import wwfs.extends as extends
-import wwfs.crosses as crosses
-import wwfs.runalongs as runs
+"""Computes the best next move."""
+
+import multiprocessing as mp
+from wwfs.extends import get_valid_word_extensions
+from wwfs.crosses import get_valid_word_crosses
+from wwfs.runalongs import get_valid_word_runs
+
+
+class TurnData(object):
+    """Delivers job data to parallel processes."""
+    def __init__(self, **kwargs):
+        self.word = kwargs.get("word", None)
+        self.rack = kwargs.get("rack", None)
+        self.board = kwargs.get('board', None)
+        self.tilebag = kwargs.get('tilebag', None)
+        self.word_extensions = []
+        self.word_crosses = []
+        self.word_runs = []
+
+
+def do_task(xfunc, word, turn_data):
+    """Wrapper function to multiprocessing."""
+    return xfunc(word, turn_data)
 
 
 class Turn(object):
@@ -9,43 +28,38 @@ class Turn(object):
 
     def __init__(self, rack, played_words, board, tilebag, debug=False):
         """Construct the board for analysis."""
-        self.rack = rack
-        self.all_played = played_words
-        self.board = board
-        self.tilebag = tilebag
+        self.turn_data = TurnData(rack=rack, board=board, tilebag=tilebag)
+        self.played_words = played_words
         self.turn_word = None
         self.turn_bonus_words = None
         self.turn_score = None
+        self.proc_ids = []
         if not debug:
-            self.get_valid_word_extensions()
-            self.word_crosses = self.get_valid_word_crosses()
-            self.word_runs = self.get_valid_word_runs()
-            self.best_word()
+            self.compute_move()
+            # self.best_word()
 
-    def get_valid_word_extensions(self):
-        """Compute all possible word extensions."""
-        # get all extensions of played words
-        self.word_extensions = []
-        for word in self.all_played:
-            candidates = extends.get_word_extensions(word, DICT, self.rack)
-            if candidates:
-                for candidate in candidates:
-                    is_valid, bonus_words = extends.is_valid_move_extention(
-                                                self.board, word, candidate,
-                                                self.tilebag)
-                    if is_valid:
-                        self.word_extensions.append((is_valid, bonus_words))
-
-    def get_valid_word_crosses(self):
-        """Compute all possible word overlaps. Mainly rack words."""
-
-    def get_valid_word_runs(self):
-        """Compute all possible word run along."""
+    def compute_move(self):
+        """Parallel process next move."""
+        processes = []
+        pool = mp.Pool(4)
+        mp_manager = mp.Manager()
+        self.turn_data.queue = mp_manager.Queue(len(self.played_words) * 3)
+        for word in self.played_words:
+            for task in [get_valid_word_extensions,
+                         get_valid_word_crosses, get_valid_word_runs]:
+                processes.append(pool.apply_async(do_task,
+                                 (task, word, self.turn_data, )))
+        for xproc in processes:
+            xproc.get()
+        while not self.turn_data.queue.empty():
+            self.proc_ids.append(self.turn_data.queue.get())
 
     def best_word(self):
         """Compute_best move."""
-        playable = set()
-        # collect all candidates
-        for word, bonus in self.word_extensions:
-            print(word, bonus)
-        #  return word
+        self.playable = (self.turn_data.word_extensions +
+                         self.turn_data.word_crosses +
+                         self.turn_data.word_runs)
+        sorted(self.playable, key=lambda x: x[2], reverse=True)
+        self.turn_word = self.playable[0][0]
+        self.turn_bonus_words = self.playable[0][1]
+        self.turn_score = self.playable[0][2]
