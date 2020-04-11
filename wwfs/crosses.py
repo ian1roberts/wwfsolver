@@ -14,10 +14,13 @@ def get_valid_word_crosses(word, job_data):
             if is_valid:
                 tot_score = is_valid.score + sum(
                                         [x.score for x in bonus_words])
-                word_crosses.append((word, is_valid, bonus_words, tot_score))
+                word_crosses.append({"type": "crosses", "data":
+                                    (word, is_valid, bonus_words,
+                                     tot_score)})
     # print("Word Crosses for {} done. {} found.".format(
     #                                     word, len(job_data.word_crosses)))
     job_data.queue.put(word_crosses)
+
 
 def get_word_crosses(word, DICT, rack):
     """Get all valid words that cross existing board words."""

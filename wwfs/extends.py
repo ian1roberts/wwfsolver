@@ -16,8 +16,9 @@ def get_valid_word_extensions(word, job_data):
             if is_valid:
                 tot_score = is_valid.score + sum(
                                         [x.score for x in bonus_words])
-                word_extensions.append((word, is_valid, bonus_words,
-                                        tot_score))
+                word_extensions.append({"type": "extensions", "data":
+                                        (word, is_valid, bonus_words,
+                                         tot_score)})
     print("Word Extensions for {} done. {} found.".format(
                                         word, len(word_extensions)))
     job_data.queue.put(word_extensions)

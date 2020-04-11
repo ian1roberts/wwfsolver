@@ -27,13 +27,27 @@ class Turn(object):
         """Construct the board for analysis."""
         self.turn_data = TurnData(rack=rack, board=board, tilebag=tilebag)
         self.played_words = played_words
+        self.anchor_word = None
         self.turn_word = None
         self.turn_bonus_words = None
         self.turn_score = None
-        self.results = []
+        self.extensions = []
+        self.crosses = []
+        self.runs = []
+        self.playable = []
         if not debug:
             self.compute_move()
-            # self.best_word()
+            self.best_word()
+
+    def __str__(self):
+        return ("Play: {} at: {}:{} scores: {}. Bonus words: {}\n"
+                "Considered: {} of Extensions: {}, Crosses: {}. Runs").format(
+                self.turn_word.word, self.turn_word.coord,
+                self.turn_word.direction, self.turn_score,
+                " ".join([x.word for x in self.turn_bonus_words]),
+                len(self.playable), len(self.extensions), len(self.crosses),
+                len(self.runs)
+                )
 
     def compute_move(self):
         """Parallel process next move."""
@@ -48,15 +62,20 @@ class Turn(object):
                                  (task, word, self.turn_data, )))
         for xproc in processes:
             xproc.get()
+        result_types = {"extensions": self.extensions,
+                        "crosses": self.crosses, "runs": self.runs}
         while not self.turn_data.queue.empty():
-            self.results.append(self.turn_data.queue.get())
+            results = self.turn_data.queue.get()
+            if results:
+                for result in results:
+                    result_type = result_types[result["type"]]
+                    result_type.append(result['data'])
+        self.playable = self.extensions + self.crosses + self.runs
+        self.playable.sort(key=lambda x: x[3], reverse=True)
 
     def best_word(self):
         """Compute_best move."""
-        self.playable = (self.turn_data.word_extensions +
-                         self.turn_data.word_crosses +
-                         self.turn_data.word_runs)
-        sorted(self.playable, key=lambda x: x[2], reverse=True)
-        self.turn_word = self.playable[0][0]
-        self.turn_bonus_words = self.playable[0][1]
-        self.turn_score = self.playable[0][2]
+        self.turn_word = self.playable[0][1]
+        self.turn_bonus_words = self.playable[0][2]
+        self.turn_score = self.playable[0][3]
+        self.anchor_word = self.playable[0][0]

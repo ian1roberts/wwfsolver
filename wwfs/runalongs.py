@@ -14,7 +14,9 @@ def get_valid_word_runs(word, job_data):
             if is_valid:
                 tot_score = is_valid.score + sum(
                                         [x.score for x in bonus_words])
-                word_runs.append((word, is_valid, bonus_words, tot_score))
+                word_runs.append({"type": "runs", "data":
+                                 (word, is_valid, bonus_words,
+                                  tot_score)})
     # print("Word Runalongs for {} done. {} found.".format(
     #                                     word, len(job_data.word_runs)))
     job_data.queue.put(word_runs)
