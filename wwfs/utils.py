@@ -16,12 +16,26 @@ def load_dictionary(wordlist=WORDLIST):
     return words
 
 
-def permute_rack(rack):
-    """Construct all 2 - 7 letter combinations from rack."""
-    maxlen = len(rack) + 1
-    for wl in range(2, maxlen):
-        for i in itertools.permutations(rack, r=wl):
-            yield("".join(i))
+def _chunks(seq, num):
+    avg = len(seq) / float(num)
+    out = []
+    last = 0.0
+    while last < len(seq):
+        out.append(seq[int(last):int(last + avg)])
+        last += avg
+    return out
+
+
+def permute_racks(racks, DICT):
+    result = set()
+    for rack in racks:
+        maxlen = len(rack) + 1
+        for wl in range(2, maxlen):
+            for yword in itertools.permutations(rack, r=wl):
+                yword = "".join(yword)
+                if yword in DICT:
+                    result.add(yword)
+    return result
 
 
 def is_valid_word(word, wordlist):

@@ -1,10 +1,11 @@
 """Compute best scoring words."""
 import itertools
+import multiprocessing as mp
 from collections import Counter
 from copy import copy
-from wwfs.utils import permute_rack, is_valid_word
+from wwfs.utils import _chunks, permute_racks
 from wwfs.word import Word
-from wwfs.config import DICT, ALPHA
+from wwfs.config import ALPHA, DICT
 
 
 class Rack(object):
@@ -24,10 +25,12 @@ class Rack(object):
     """
     def __init__(self, letters, player=1):
         """Represent an active rack of tiles."""
+        self.original_letters = []
         self.letters = list(letters.strip().upper())
         self.letters_no_blanks = [x for x in self.letters if x != '0']
         self.player = player
         self.racks = []
+        self.words = set()
         if player == 1:
             # TODO: add played board letters to racks if accsesible to play
             self.make_racks()  # solve blanks
@@ -41,25 +44,30 @@ class Rack(object):
     def racks_from_blanks(self):
         """Add racks from solving blanks."""
         if self.nblanks == 2:
-            x = itertools.product(ALPHA, repeat=2)
             d = set()
-            for i in x:
+            for i in itertools.product(ALPHA, repeat=2):
                 d.add("".join(sorted(list(i))))
-                dd = list(d)
-                dd.sort()
-            for d in dd:
-                rc = Counter(list(d) + self.letters_no_blanks)
-                self.racks.append(rc)
+            for d in sorted(list(d)):
+                self.racks.append(Counter(list(d) + self.letters_no_blanks))
             return
 
         for A in ALPHA:
-            rc = Counter([A, ] + self.letters_no_blanks)
-            self.racks.append(rc)
+            self.racks.append(Counter([A, ] + self.letters_no_blanks))
 
     def racks_from_played_word(self, word):
         """Extend racks from played word."""
+        self.original_letters = [] + self.letters
+        self.racks = []
+        check = set()
+        for letter in word.letters:
+            if letter in check:
+                continue
+            check.add(letter)
+            self.letters = [letter] + self.original_letters
+            self.letters_no_blanks = [x for x in self.letters if x != '0']
+            self.make_racks()  # solve blanks
 
-    def make_racks(self):
+    def make_racks(self, include_played=False):
         """Compute all playable racks by solving blanks."""
         # 1. Generate racks from blanks
         if self.nblanks:
@@ -69,14 +77,23 @@ class Rack(object):
         if not self.nblanks:
             self.racks.append(Counter(self.letters_no_blanks))
 
-    def compute_rack_words(self, WordType=Word):
+    def compute_rack_words(self, xword=None, WordType=Word):
         """Permute rack letters to generate list of viable words."""
-        self.words = set()
-        for rack in self.racks:
-            for word in permute_rack(list(rack.elements())):
-                if is_valid_word(word, DICT):
-                    # TODO: Handle extends, crosses and run alongs
-                    self.words.add(WordType(word))  # Simple rack words only
+        rack_strings = set(["".join(sorted(list(r.elements())))
+                            for r in self.racks])
+        words = set()
+        with mp.Pool(2) as pool:
+            for rack_string in _chunks(list(rack_strings), 2):
+                result = pool.apply(permute_racks, (rack_string, DICT, ))
+                words.update(result)
+        pool.close()
+        pool.join()
+
+        if xword:
+            self.words = {WordType(x, parent=xword) for x in words if
+                          set(xword.word) & set(x)}
+        else:
+            self.words = {WordType(x) for x in words}
 
     def compute_all_play_word_scores(self, board, tilebag):
         """Return the highest scoring word play for all rack words."""
@@ -91,9 +108,9 @@ class Rack(object):
                         xword.coord = square.coord
                         xword.direction = d
                         xword_scores.add(xword)
-
-        self.word_scores = sorted(list(xword_scores), key=lambda x: (-x.score,
-                                  x.word, x.x, x.y, x.direction))
+        self.word_scores = list(xword_scores)
+        self.word_scores.sort(key=lambda x: (-x.score, x.word, x.x, x.y,
+                                             x.direction))
 
     def first_word(self, board):
         """Return best word that passes through center square."""

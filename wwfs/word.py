@@ -29,6 +29,10 @@ class BaseWord(ABC):
             return self.coord[1]
         return False
 
+    @property
+    def letters(self):
+        return list(self.word)
+
     @abstractmethod
     def compute_word_score(self, squares, tilebag):
         """Given a single word and tile squares, compute the word score."""
@@ -100,7 +104,6 @@ class WordExtension(BaseWord):
     """Represent an extended word."""
 
     def __init__(self, word, **kwargs):
-        # super().__init__(word, **kwargs)
         self.word = word
         self.parent = kwargs.get("parent", None)
         self.front_part = kwargs.get("front", None)
@@ -117,6 +120,25 @@ class WordExtension(BaseWord):
         if not self.front_part_xy:
             return self.parent.coord
         return self.front_part_xy
+
+
+class WordCrosses(BaseWord):
+    """Represent an extended word."""
+
+    def __init__(self, word, **kwargs):
+        self.word = word
+        self.parent = kwargs.get("parent", None)
+        self.front_part = kwargs.get("front", None)
+        self.back_part = kwargs.get("back", None)
+        self.front_part_xy = None
+        self.back_part_xy = None
+        self.direction = None
+        self.coord = (None, None)
+        self.score = None
+
+    def compute_word_score(self, squares, tilebag):
+        """Given a word extension, compute turn score."""
+        super().compute_word_score(squares, tilebag)
 
 
 class BonusWord(BaseWord):

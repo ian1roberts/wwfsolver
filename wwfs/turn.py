@@ -41,7 +41,8 @@ class Turn(object):
 
     def __str__(self):
         return ("Play: {} at: {}:{} scores: {}. Bonus words: {}\n"
-                "Considered: {} of Extensions: {}, Crosses: {}. Runs").format(
+                "Considered: {} words out of Extensions: {}, Crosses: {}, Ru"
+                "ns: {}.").format(
                 self.turn_word.word, self.turn_word.coord,
                 self.turn_word.direction, self.turn_score,
                 " ".join([x.word for x in self.turn_bonus_words]),
@@ -52,30 +53,33 @@ class Turn(object):
     def compute_move(self):
         """Parallel process next move."""
         processes = []
-        pool = mp.Pool(4)
         mp_manager = mp.Manager()
         self.turn_data.queue = mp_manager.Queue(len(self.played_words) * 3)
-        for word in self.played_words:
-            for task in [get_valid_word_extensions,
-                         get_valid_word_crosses, get_valid_word_runs]:
-                processes.append(pool.apply_async(do_task,
-                                 (task, word, self.turn_data, )))
-        for xproc in processes:
-            xproc.get()
-        result_types = {"extensions": self.extensions,
-                        "crosses": self.crosses, "runs": self.runs}
-        while not self.turn_data.queue.empty():
-            results = self.turn_data.queue.get()
-            if results:
-                for result in results:
-                    result_type = result_types[result["type"]]
-                    result_type.append(result['data'])
+        with mp.Pool(4) as pool:
+            for word in self.played_words:
+                for task in [get_valid_word_extensions,
+                             get_valid_word_crosses, get_valid_word_runs]:
+                    processes.append(pool.apply_async(do_task,
+                                     (task, word, self.turn_data, )))
+            for xproc in processes:
+                xproc.get()
+            pool.close()
+            pool.join()
+            result_types = {"extensions": self.extensions,
+                            "crosses": self.crosses, "runs": self.runs}
+            while not self.turn_data.queue.empty():
+                results = self.turn_data.queue.get()
+                if results:
+                    for result in results:
+                        result_type = result_types[result["type"]]
+                        result_type.append(result['data'])
+
         self.playable = self.extensions + self.crosses + self.runs
         self.playable.sort(key=lambda x: x[3], reverse=True)
 
     def best_word(self):
         """Compute_best move."""
+        self.anchor_word = self.playable[0][0]
         self.turn_word = self.playable[0][1]
         self.turn_bonus_words = self.playable[0][2]
         self.turn_score = self.playable[0][3]
-        self.anchor_word = self.playable[0][0]
